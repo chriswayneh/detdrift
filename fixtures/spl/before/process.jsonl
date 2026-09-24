@@ -1,0 +1,2 @@
+{"Image": "C:\\Windows\\System32\\whoami.exe", "ProcessCommandLine": "whoami /all", "AccountName": "CORP\\alice", "_time": "2026-01-01T00:00:00Z"}
+{"Image": "C:\\Windows\\System32\\cmd.exe", "ProcessCommandLine": "cmd.exe /c whoami", "AccountName": "CORP\\bob", "_time": "2026-01-01T00:01:00Z"}

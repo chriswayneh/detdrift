@@ -17,7 +17,7 @@ from detdrift.sarif import format_sarif
 
 app = typer.Typer(
     name="detdrift",
-    help="Report which detection rules lose fields after a schema change (Sigma default; optional KQL).",
+    help="Report which detection rules lose fields after a schema change (Sigma default; optional KQL/SPL).",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -112,7 +112,7 @@ def diff_cmd(
         "-d",
         help=(
             "Rule dialect: sigma (default, *.yml/*.yaml), kql (*.kql), "
-            "or auto (pick per file by extension)."
+            "spl (*.spl), or auto (pick per file by extension)."
         ),
     ),
 ) -> None:
@@ -187,14 +187,14 @@ def diff_cmd(
 
 @app.command("fields")
 def fields_cmd(
-    rule: Path = typer.Argument(..., help="Path to a rule file (Sigma YAML or .kql)"),
+    rule: Path = typer.Argument(..., help="Path to a rule file (Sigma YAML, .kql, or .spl)"),
     dialect: str = typer.Option(
         "auto",
         "--dialect",
         "-d",
         help=(
-            "Rule dialect: auto (default; by extension), sigma, or kql. "
-            ".yml/.yaml -> sigma, .kql -> kql."
+            "Rule dialect: auto (default; by extension), sigma, kql, or spl. "
+            ".yml/.yaml -> sigma, .kql -> kql, .spl -> spl."
         ),
     ),
 ) -> None:

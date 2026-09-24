@@ -13,7 +13,7 @@ Help a human check whether a telemetry schema change would silence Sigma rules, 
 | Command | Purpose |
 |---------|---------|
 | `detdrift diff -b BEFORE -a AFTER -r RULES` | IMPACTED / SAFE report. Exit 1 if any rule loses a before-field. |
-| `detdrift fields RULE.yml` | List field refs from one rule (modifiers stripped). |
+| `detdrift fields RULE` | List field refs from one rule (Sigma / KQL / SPL; `--dialect auto` by extension). |
 | `detdrift propose-patch -b BEFORE -a AFTER -r RULES` | Draft mapping notes (default) or a unified diff (`--format patch`). |
 | `detdrift init [DIR]` | Write demo fixtures (`CommandLine` → `cmd`). |
 
@@ -26,6 +26,10 @@ Help a human check whether a telemetry schema change would silence Sigma rules, 
 3. When renames are obvious (e.g. `CommandLine` removed and `cmd` added), notes suggest the mapping; `--format patch` emits a draft unified diff.
 4. **Human reviews and applies.** Do not auto-commit. Do not edit rules in place unless the human explicitly asks after reviewing the draft.
 5. Re-run `detdrift diff` after applying fixes; expect PASS / exit 0 when fields are restored under the new names.
+
+## Dialects
+
+Sigma is default for `diff`. Optional offline extractors: `--dialect kql` (`*.kql`), `--dialect spl` (`*.spl`), or `auto` (by extension). Not query engines.
 
 ## Guardrails
 

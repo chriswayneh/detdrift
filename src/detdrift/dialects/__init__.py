@@ -1,6 +1,6 @@
 """Pluggable rule dialects for field-reference extraction.
 
-Sigma remains the default. Optional dialects (currently KQL) are simple
+Sigma remains the default. Optional dialects (KQL, SPL) are simple
 offline extractors — not query engines or matchers.
 """
 
@@ -11,21 +11,24 @@ from typing import Callable
 
 from detdrift.dialects import kql as kql_mod
 from detdrift.dialects import sigma as sigma_mod
+from detdrift.dialects import spl as spl_mod
 
-DialectName = str  # "sigma" | "kql" | "auto"
+DialectName = str  # "sigma" | "kql" | "spl" | "auto"
 
-SUPPORTED_DIALECTS: tuple[str, ...] = ("sigma", "kql", "auto")
+SUPPORTED_DIALECTS: tuple[str, ...] = ("sigma", "kql", "spl", "auto")
 
 # Extension → dialect (used when dialect=auto or when discovering rules).
 EXTENSION_DIALECT: dict[str, str] = {
     ".yml": "sigma",
     ".yaml": "sigma",
     ".kql": "kql",
+    ".spl": "spl",
 }
 
 _EXTRACTORS: dict[str, Callable[[Path], set[str]]] = {
     "sigma": sigma_mod.extract_fields_from_file,
     "kql": kql_mod.extract_fields_from_file,
+    "spl": spl_mod.extract_fields_from_file,
 }
 
 
@@ -62,8 +65,10 @@ def rule_globs_for_dialect(dialect: str | None) -> tuple[str, ...]:
         return ("**/*.yml", "**/*.yaml")
     if d == "kql":
         return ("**/*.kql",)
-    # auto: both
-    return ("**/*.yml", "**/*.yaml", "**/*.kql")
+    if d == "spl":
+        return ("**/*.spl",)
+    # auto: all known
+    return ("**/*.yml", "**/*.yaml", "**/*.kql", "**/*.spl")
 
 
 def extract_fields_from_file(path: Path | str, *, dialect: str | None = None) -> set[str]:
@@ -84,4 +89,6 @@ def load_rule_meta(path: Path | str, *, dialect: str | None = None) -> dict:
         return sigma_mod.load_rule_meta(path)
     if effective == "kql":
         return kql_mod.load_rule_meta(path)
+    if effective == "spl":
+        return spl_mod.load_rule_meta(path)
     raise ValueError(f"No metadata loader for dialect {effective!r}")

@@ -59,7 +59,7 @@ flowchart LR
 | `cli.py` | Commands: `diff`, `fields`, `propose-patch`, `init` (`diff --format human|json|sarif`) |
 | `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory); sample stats + empty/incomplete warnings |
 | `fields.py` | Walk Sigma `detection` selections, strip `|modifiers`, collect field paths |
-| `dialects/` | Pluggable extractors: Sigma (default) + simple offline KQL (`where` / `project` / `by`) |
+| `dialects/` | Pluggable extractors: Sigma (default) + simple offline KQL/SPL |
 | `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after; recursive discovery; fail-on helpers |
 | `propose.py` | Heuristic rename suggestions; mapping notes or draft unified diffs (stdout/`--output` only) |
 | `sarif.py` | SARIF 2.1.0 export from DiffReport for CI / PR annotations |
@@ -92,13 +92,14 @@ flowchart LR
 - No evaluation of `condition`, timeframes, or correlations.
 
 
-## Dialects (v0.5)
+## Dialects (v0.5-0.6)
 
 - **sigma** (default): YAML rules; discovery `*.yml` / `*.yaml`.
-- **kql**: text queries; discovery `*.kql`. Simple field refs only (`where Field op`, `project`, `summarize … by`, `sort by`).
-- **auto**: per-file by extension (`.kql` → KQL, otherwise Sigma).
+- **kql**: text queries; discovery `*.kql`. Simple field refs only (`where Field op`, `project`, `summarize ... by`, `sort by`).
+- **spl**: text searches; discovery `*.spl`. Simple field refs only (`Field=`, `stats ... by`, `table`, `rex field=`).
+- **auto**: per-file by extension (`.kql` -> KQL, `.spl` -> SPL, otherwise Sigma).
 
-CLI: `detdrift diff --dialect …`, `detdrift fields --dialect …` (fields defaults to `auto`).
+CLI: `detdrift diff --dialect ...`, `detdrift fields --dialect ...` (fields defaults to `auto`).
 
 ## Trust and security
 
@@ -112,7 +113,7 @@ CLI: `detdrift diff --dialect …`, `detdrift fields --dialect …` (fields defa
 | Hook | Possible use | Guardrail |
 |------|--------------|-----------|
 | Schema providers | SIEM export, parquet sample, pipeline dry-run output | Still offline snapshots. Core does not require a live SIEM. |
-| Rule providers | KQL (shipped v0.5), SPL, or custom YAML | Same impact report contract; not a query engine |
+| Rule providers | KQL (v0.5), SPL (v0.6), or custom YAML | Same impact report contract; not a query engine |
 | Reporters | SARIF, GitHub Check annotations | Keep exit codes stable |
 | Propose-patch | Draft mapping or rule fixes for review | Human merge only |
 

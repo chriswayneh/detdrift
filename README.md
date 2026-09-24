@@ -2,7 +2,7 @@
 
 If a telemetry field mapping changes, which detection rules go quiet?
 
-detdrift is a small CLI you can run locally or in CI. Give it your rules (Sigma by default; optional KQL) plus a before and after NDJSON sample. It tells you which rules still need fields that disappeared after the change. It does not run detections, and it is not a SIEM.
+detdrift is a small CLI you can run locally or in CI. Give it your rules (Sigma by default; optional KQL/SPL) plus a before and after NDJSON sample. It tells you which rules still need fields that disappeared after the change. It does not run detections, and it is not a SIEM.
 
 Example: `CommandLine` gets renamed to `cmd`. A whoami rule that keys on `CommandLine` shows up as IMPACTED.
 
@@ -59,7 +59,7 @@ Python 3.12 or newer. PyPI install (`pip install detdrift`) comes later.
 | Command | What it does |
 |--------|----------------|
 | `detdrift diff -b BEFORE -a AFTER -r RULES` | Main check. Exit 1 if any rule is impacted (or if a fail-on filter matches). |
-| `detdrift fields RULE` | List field names pulled from one rule (Sigma YAML or `.kql`). |
+| `detdrift fields RULE` | List field names pulled from one rule (Sigma YAML, `.kql`, or `.spl`). |
 | `detdrift init [DIR]` | Write sample rules and before/after fixtures. |
 | `detdrift propose-patch -b BEFORE -a AFTER -r RULES` | Draft mapping notes (default) or a unified diff (`--format patch`). Review only; no in-place edits. |
 
@@ -71,10 +71,10 @@ Useful `diff` flags:
 - `--fail-on-severity high,critical` to exit 1 only when an IMPACTED rule is at least that severe (still prints all IMPACTED rules)
 - `--fail-on-tag attack.t1059` to exit 1 only when an IMPACTED rule has a matching tag (substring, case-insensitive)
 - `--ignore GLOB` to skip extra rule paths (repeatable). Default ignored directory names include `.git`, `.github`, `vendor`, and `tests`
-- `--dialect sigma|kql|auto` — rule language for field extraction (`sigma` default on `diff`; `fields` defaults to `auto` by extension)
+- `--dialect sigma|kql|auto` - rule language for field extraction (`sigma` default on `diff`; `fields` defaults to `auto` by extension)
 - Empty or clearly incomplete **after** samples produce a WARNING (stderr + report). An empty file is not the same as "nothing removed".
 
-`BEFORE` and `AFTER` can be one NDJSON/JSONL file, a flat JSON field map (`{"Image": true, ...}` or `{"fields": [...]}`), a JSON array of events, or a directory of those. See [importers](docs/importers.md). Rules under `--rules` are found recursively (`*.yml` / `*.yaml` for Sigma; add `*.kql` with `--dialect kql` or `auto`).
+`BEFORE` and `AFTER` can be one NDJSON/JSONL file, a flat JSON field map (`{"Image": true, ...}` or `{"fields": [...]}`), a JSON array of events, or a directory of those. See [importers](docs/importers.md). Rules under `--rules` are found recursively (`*.yml` / `*.yaml` for Sigma; add `*.kql` / `*.spl` with `--dialect kql|spl|auto`).
 
 ### Fail-on example
 
@@ -110,25 +110,31 @@ Agent skill: [`skills/detdrift/SKILL.md`](skills/detdrift/SKILL.md).
 
 ## Other dialects (Phase 4)
 
-Sigma is the default. v0.5 adds an optional **KQL** extractor for simple field references — not a KQL engine and not a matcher.
+Sigma is the default. Optional **KQL** (v0.5) and **SPL** (v0.6) extractors collect simple field references - not query engines and not matchers.
 
 ```bash
-# list fields from a .kql file (auto-detect by extension)
+# list fields from a .kql / .spl file (auto-detect by extension)
 detdrift fields examples/kql/rules/whoami_process.kql
+detdrift fields examples/spl/rules/whoami_process.spl
 
-# diff KQL rules against KQL-oriented samples
+# diff against dialect-oriented samples
 detdrift diff \
   --before fixtures/kql/before --after fixtures/kql/after \
   --rules examples/kql/rules --dialect kql
+
+detdrift diff \
+  --before fixtures/spl/before --after fixtures/spl/after \
+  --rules examples/spl/rules --dialect spl
 ```
 
 | Dialect | Flag | Files | What is extracted |
 |---------|------|-------|-------------------|
 | Sigma | `--dialect sigma` (default for `diff`) | `*.yml`, `*.yaml` | Selection field keys (modifiers stripped) |
-| KQL | `--dialect kql` | `*.kql` | `where Field op`, `project` lists, `summarize … by`, `sort by` |
-| Auto | `--dialect auto` (default for `fields`) | both | Per file by extension |
+| KQL | `--dialect kql` | `*.kql` | `where Field op`, `project` lists, `summarize ... by`, `sort by` |
+| SPL | `--dialect spl` | `*.spl` | `Field=`, `stats ... by`, `table`, `rex field=` |
+| Auto | `--dialect auto` (default for `fields`) | all of the above | Per file by extension |
 
-Limits for KQL: no joins, `let`, or expression trees; `extend` LHS is ignored; function-call arguments inside `project` are not walked. SPL is not shipped yet.
+Limits: KQL ignores joins, `let`, and expression trees; SPL ignores subsearches, macros, and `eval` trees. Neither dialect executes queries.
 
 ## How it works
 
@@ -175,9 +181,9 @@ Or install and run the CLI yourself:
 
 ## What this is and is not
 
-**Is:** a check for detection field references (Sigma default; optional KQL) against a schema change. A CI gate for mapping edits. Small helpers (`fields`, `propose-patch`) for seeing what a rule touches and drafting mapping notes.
+**Is:** a check for detection field references (Sigma default; optional KQL/SPL) against a schema change. A CI gate for mapping edits. Small helpers (`fields`, `propose-patch`) for seeing what a rule touches and drafting mapping notes.
 
-**Is not:** a Sigma/KQL matcher, correlator, or SIEM. It does not evaluate Sigma `condition` blocks or execute KQL. A rule that is not IMPACTED still might not fire for other reasons. This only says the fields it names are still present.
+**Is not:** a Sigma/KQL/SPL matcher, correlator, or SIEM. It does not evaluate Sigma `condition` blocks or execute KQL/SPL. A rule that is not IMPACTED still might not fire for other reasons. This only says the fields it names are still present.
 
 Current limits:
 

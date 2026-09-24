@@ -1,0 +1,6 @@
+# Whoami via process command line (SPL sample for detdrift)
+index=main sourcetype=WinEventLog
+| search Image="*whoami.exe*" OR ProcessCommandLine="*whoami*"
+| rex field=ProcessCommandLine "whoami\s+(?<whoami_args>.*)"
+| stats count by AccountName, Image, ProcessCommandLine
+| table _time, AccountName, Image, ProcessCommandLine, count
