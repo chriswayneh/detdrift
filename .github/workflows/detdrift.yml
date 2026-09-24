@@ -40,3 +40,27 @@ jobs:
             echo "expected exit 1 for before→after drift, got $code" >&2
             exit 1
           fi
+
+      - name: KQL demo drift must fail (exit 1)
+        if: hashFiles('fixtures/kql/before/**', 'examples/kql/rules/**') != ''
+        run: |
+          set +e
+          detdrift diff --before fixtures/kql/before --after fixtures/kql/after --rules examples/kql/rules --dialect kql
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 for KQL before→after drift, got $code" >&2
+            exit 1
+          fi
+
+      - name: SPL demo drift must fail (exit 1)
+        if: hashFiles('fixtures/spl/before/**', 'examples/spl/rules/**') != ''
+        run: |
+          set +e
+          detdrift diff --before fixtures/spl/before --after fixtures/spl/after --rules examples/spl/rules --dialect spl
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 for SPL before→after drift, got $code" >&2
+            exit 1
+          fi

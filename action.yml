@@ -16,7 +16,7 @@ inputs:
     description: Path to after NDJSON file or directory
     required: true
   rules:
-    description: Directory of Sigma YAML rules
+    description: Directory of rules (Sigma YAML; use dialect for *.kql / *.spl)
     required: true
   fail-on-severity:
     description: >
@@ -31,6 +31,12 @@ inputs:
       When set (alone or with fail-on-severity), only matching IMPACTED rules fail the step.
     required: false
     default: ""
+  dialect:
+    description: >
+      Rule dialect for field extraction: sigma (default), kql, spl, or auto
+      (per-file by extension). Passed to detdrift diff --dialect.
+    required: false
+    default: "sigma"
   python-version:
     description: Python version for setup-python
     required: false
@@ -70,5 +76,8 @@ runs:
         fi
         if [ -n "${{ inputs.fail-on-tag }}" ]; then
           args+=(--fail-on-tag "${{ inputs.fail-on-tag }}")
+        fi
+        if [ -n "${{ inputs.dialect }}" ]; then
+          args+=(--dialect "${{ inputs.dialect }}")
         fi
         detdrift "${args[@]}"

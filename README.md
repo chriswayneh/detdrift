@@ -71,7 +71,7 @@ Useful `diff` flags:
 - `--fail-on-severity high,critical` to exit 1 only when an IMPACTED rule is at least that severe (still prints all IMPACTED rules)
 - `--fail-on-tag attack.t1059` to exit 1 only when an IMPACTED rule has a matching tag (substring, case-insensitive)
 - `--ignore GLOB` to skip extra rule paths (repeatable). Default ignored directory names include `.git`, `.github`, `vendor`, and `tests`
-- `--dialect sigma|kql|auto` - rule language for field extraction (`sigma` default on `diff`; `fields` defaults to `auto` by extension)
+- `--dialect sigma|kql|spl|auto` - rule language for field extraction (`sigma` default on `diff`; `fields` defaults to `auto` by extension)
 - Empty or clearly incomplete **after** samples produce a WARNING (stderr + report). An empty file is not the same as "nothing removed".
 
 `BEFORE` and `AFTER` can be one NDJSON/JSONL file, a flat JSON field map (`{"Image": true, ...}` or `{"fields": [...]}`), a JSON array of events, or a directory of those. See [importers](docs/importers.md). Rules under `--rules` are found recursively (`*.yml` / `*.yaml` for Sigma; add `*.kql` / `*.spl` with `--dialect kql|spl|auto`).
@@ -168,9 +168,12 @@ Other repos can call the composite action at the repo root (`action.yml`):
     # optional:
     # fail-on-severity: high,critical
     # fail-on-tag: attack.t1059
+    # dialect: kql   # sigma (default) | kql | spl | auto
 ```
 
-Pin a release tag when you have one (for example `@v0.2.0`) instead of `@main`.
+Action input `dialect` is passed through to `detdrift diff --dialect` (`sigma` by default).
+
+Pin a release tag when you have one (for example `@v0.6.1`) instead of `@main`.
 
 Or install and run the CLI yourself:
 

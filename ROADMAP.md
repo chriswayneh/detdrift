@@ -76,6 +76,7 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 - [x] Pluggable field extractors - simple **KQL** field refs (v0.5.0; `--dialect sigma|kql|auto`)
 - [x] Optional **SPL** field refs (v0.6.0; `--dialect sigma|kql|spl|auto`)
+- [x] Action `dialect` input (`sigma|kql|spl|auto`) wired to `detdrift diff` (v0.6.1)
 - [ ] Stable 1.0 contract for schema and report JSON
 - [ ] Publish on PyPI: `pip install detdrift`
 
