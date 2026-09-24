@@ -1,2 +1,2 @@
 """detdrift: report which Sigma rules lose fields after a schema change."""
-__version__ = "0.3.0"
+__version__ = "0.4.0"

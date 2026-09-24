@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from detdrift.fields import extract_fields_from_rule, load_rule
-from detdrift.schema import schema_from_path
+from detdrift.schema import load_schema_sample, sample_warnings
 
 # JSON report contract version (see docs/json-report.md).
 REPORT_SCHEMA_VERSION = 1
@@ -68,6 +68,9 @@ class DiffReport:
     impacts: list[RuleImpact]
     rules_scanned: int = 0
     schema_version: int = REPORT_SCHEMA_VERSION
+    warnings: list[str] = field(default_factory=list)
+    before_event_count: int = 0
+    after_event_count: int = 0
 
     @property
     def impacted(self) -> list[RuleImpact]:
@@ -130,7 +133,7 @@ class DiffReport:
         return out
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "schema_version": self.schema_version,
             "before_fields": self.before_fields,
             "after_fields": self.after_fields,
@@ -138,8 +141,13 @@ class DiffReport:
             "rules_scanned": self.rules_scanned,
             "impacted_count": len(self.impacted),
             "safe_count": len(self.safe),
+            "before_event_count": self.before_event_count,
+            "after_event_count": self.after_event_count,
             "impacts": [i.to_dict() for i in self.impacts],
         }
+        if self.warnings:
+            payload["warnings"] = list(self.warnings)
+        return payload
 
 
 def _should_ignore(path: Path, root: Path, ignore_dirs: set[str], ignore_globs: list[str]) -> bool:
@@ -275,9 +283,12 @@ def diff_rules(
     ignore: Iterable[str] | None = None,
 ) -> DiffReport:
     """Compare before/after schemas and flag rules that would go silent."""
-    before = schema_from_path(before_path)
-    after = schema_from_path(after_path)
+    before_sample = load_schema_sample(before_path)
+    after_sample = load_schema_sample(after_path)
+    before = before_sample.fields
+    after = after_sample.fields
     removed = sorted(before - after)
+    warnings = sample_warnings(before_sample, after_sample)
 
     rules_root = Path(rules_dir)
     rule_files = discover_rules(rules_root, ignore=ignore)
@@ -293,6 +304,9 @@ def diff_rules(
         impacts=impacts,
         rules_scanned=len(rule_files),
         schema_version=REPORT_SCHEMA_VERSION,
+        warnings=warnings,
+        before_event_count=before_sample.event_count,
+        after_event_count=after_sample.event_count,
     )
 
 
@@ -314,6 +328,12 @@ def format_report_human(
         f"Removed fields:   {', '.join(report.removed_fields) if report.removed_fields else '(none)'}"
     )
     lines.append("")
+
+    if report.warnings:
+        lines.append(f"WARNINGS ({len(report.warnings)}):")
+        for msg in report.warnings:
+            lines.append(f"  ! {msg}")
+        lines.append("")
 
     impacted = report.impacted
     safe = report.safe

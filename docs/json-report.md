@@ -61,6 +61,8 @@ included:
 | `impacts[].level` | Sigma `level` (or `severity`), lowercased, or empty. |
 | `impacts[].tags` | Sigma `tags` list as strings. |
 | `fail_on` | Only present when fail-on CLI filters were used. |
+| `before_event_count` / `after_event_count` | Parsed event lines in each sample set (optional additive keys). |
+| `warnings` | Only present when the after sample looks empty or incomplete. |
 
 ## Compatibility
 

@@ -111,6 +111,10 @@ def diff_cmd(
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
 
+    # Always surface sample warnings on stderr (also in human/JSON report body).
+    for msg in report.warnings:
+        typer.secho(f"warning: {msg}", fg=typer.colors.YELLOW, err=True)
+
     sev_filters = _split_csv(fail_on_severity)
     tag_filters = _split_csv(fail_on_tag)
     filters_active = bool(sev_filters or tag_filters)

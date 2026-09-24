@@ -9,7 +9,7 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 | **0** | Foundation | Public repo, working CLI, demo fixtures, CI, docs | Shipped |
 | **1** | Harden | Better field extraction; reusable Action | Shipped (v0.2) |
 | **2** | Assist | Optional propose-patch helper and agent skill | Shipped (v0.3) |
-| **3** | Connect | Import common export formats; SARIF / PR notes | Later |
+| **3** | Connect | Import common export formats; SARIF / PR notes | In progress (v0.4) |
 | **4** | Broaden | Optional support for other rule languages | Optional |
 
 ## Phase 0: Foundation (v0.1)
@@ -64,9 +64,11 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 - Importers for common export shapes (for example flattened CloudTrail or Sysmon NDJSON packs)
 - Optional OCSF profile hints (not the main product story)
 - SARIF output and PR check annotations
-- Warn when an after sample is empty or clearly incomplete (an empty file is not the same as "nothing removed")
+- [x] Warn when an after sample is empty or clearly incomplete (an empty file is not the same as "nothing removed") (v0.4.0)
 
 **Done when:** one importer and a SARIF path show up in a CI example.
+
+**Shipped so far:** v0.4.0 empty/incomplete after-sample warnings (human + JSON + stderr).
 
 ## Phase 4: Broaden (v1.x, optional)
 

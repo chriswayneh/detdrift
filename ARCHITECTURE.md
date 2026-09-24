@@ -57,7 +57,7 @@ flowchart LR
 | Module | Role |
 |--------|------|
 | `cli.py` | Commands: `diff`, `fields`, `propose-patch`, `init` |
-| `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory) |
+| `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory); sample stats + empty/incomplete warnings |
 | `fields.py` | Walk Sigma `detection` selections, strip `|modifiers`, collect field paths |
 | `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after; recursive discovery; fail-on helpers |
 | `propose.py` | Heuristic rename suggestions; mapping notes or draft unified diffs (stdout/`--output` only) |
