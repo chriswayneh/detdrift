@@ -15,7 +15,7 @@ from detdrift.dialects import (
 )
 from detdrift.schema import load_schema_sample, sample_warnings
 
-# JSON report contract version (see docs/json-report.md).
+# JSON report contract version (stable for detdrift 1.x; see docs/json-report.md).
 REPORT_SCHEMA_VERSION = 1
 
 # Directory names skipped by default during recursive rules discovery.

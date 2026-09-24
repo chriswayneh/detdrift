@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "detdrift"
-version = "0.6.1"
-description = "Report which Sigma rules lose fields after a telemetry schema change."
+version = "1.0.0"
+description = "Report which detection rules lose fields after a telemetry schema change (Sigma; optional KQL/SPL)."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Christopher Hickman" }]
 requires-python = ">=3.12"
 keywords = ["sigma", "detection", "schema", "telemetry", "security", "ci"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",

@@ -6,7 +6,7 @@ detdrift answers one question, locally or in CI:
 
 > If this telemetry schema changes, which Sigma detections go quiet?
 
-It compares field sets before and after a change against the fields your Sigma rules name. It is not a SIEM, not a Sigma matcher, and not a data pipeline.
+It compares field sets before and after a change against the fields your rules name (Sigma by default; optional KQL/SPL). It is not a SIEM, not a matcher, and not a data pipeline.
 
 ## Design principles
 
@@ -66,7 +66,7 @@ flowchart LR
 | samples | `fixtures/before`, `fixtures/after`, `rules/` for the demo |
 | CI | `.github/workflows/detdrift.yml` runs pytest and exit-code checks |
 | Action | Root `action.yml` composite action for external repos |
-| JSON | `docs/json-report.md` documents `schema_version` |
+| JSON | `docs/json-report.md` documents stable `schema_version` 1 (1.0 contract) |
 
 ## Data flow (`detdrift diff`)
 
@@ -77,14 +77,14 @@ flowchart LR
 5. Mark IMPACTED when any referenced field is present before and absent after.
 6. Print the report. Exit `1` if any rule is IMPACTED (or if a `--fail-on-*` filter matches), `2` on I/O or parse errors, otherwise `0`.
 
-## Schema model (v0.1)
+## Schema model
 
 - Top-level keys on each event object.
 - One level of dotted paths for nested objects (`parent.image`).
-- Arrays do not expand element schemas in v0.1.
+- Arrays do not expand element schemas (1.0 same limit).
 - Field names are case-sensitive, as written in Sigma.
 
-## Rule model (v0.1)
+## Rule model (Sigma)
 
 - Single-document Sigma YAML.
 - Selection keys like `CommandLine|contains` map to field `CommandLine`.
@@ -92,28 +92,28 @@ flowchart LR
 - No evaluation of `condition`, timeframes, or correlations.
 
 
-## Dialects (v0.5-0.6)
+## Dialects (1.0)
 
 - **sigma** (default): YAML rules; discovery `*.yml` / `*.yaml`.
 - **kql**: text queries; discovery `*.kql`. Simple field refs only (`where Field op`, `project`, `summarize ... by`, `sort by`).
 - **spl**: text searches; discovery `*.spl`. Simple field refs only (`Field=`, `stats ... by`, `table`, `rex field=`).
 - **auto**: per-file by extension (`.kql` -> KQL, `.spl` -> SPL, otherwise Sigma).
 
-CLI: `detdrift diff --dialect ...`, `detdrift fields --dialect ...` (fields defaults to `auto`).
+CLI: `detdrift diff --dialect ...`, `detdrift fields --dialect ...` (fields defaults to `auto`). Same impact report contract for every dialect.
 
 ## Trust and security
 
-- Treat fixtures and rule files as untrusted input. Parse YAML only. Do not execute code from them.
+- Treat fixtures and rule files as untrusted input. Parse YAML / text only. Do not execute code from them.
 - The core path does not call external scanners.
-- v0.1 uses no credentials and no cloud APIs.
-- Phase 2 `propose-patch` is optional, offline, and never auto-applies or auto-commits. Drafts go to stdout / `--output` only.
+- No credentials and no cloud APIs on the core path.
+- `propose-patch` is optional, offline, and never auto-applies or auto-commits. Drafts go to stdout / `--output` only.
 
 ## Possible extensions later
 
 | Hook | Possible use | Guardrail |
 |------|--------------|-----------|
 | Schema providers | SIEM export, parquet sample, pipeline dry-run output | Still offline snapshots. Core does not require a live SIEM. |
-| Rule providers | KQL (v0.5), SPL (v0.6), or custom YAML | Same impact report contract; not a query engine |
+| Rule providers | Deeper KQL/SPL coverage or custom YAML | Same impact report contract; not a query engine |
 | Reporters | SARIF, GitHub Check annotations | Keep exit codes stable |
 | Propose-patch | Draft mapping or rule fixes for review | Human merge only |
 
@@ -142,5 +142,5 @@ action.yml        reusable composite GitHub Action
 
 ## Versioning
 
-- **0.x:** early releases. CLI flags may change; note them in the changelog.
-- **1.0:** stable exit codes, stable schema/field extraction contract, documented Sigma subset.
+- **0.x:** early releases (complete). See [CHANGELOG.md](CHANGELOG.md).
+- **1.0:** stable exit codes (`0` / `1` / `2`), stable JSON report (`schema_version` 1; [docs/json-report.md](docs/json-report.md)), Sigma plus optional KQL/SPL dialects behind the same CLI. Additive report keys may appear in 1.x without bumping `schema_version`; breaking JSON changes bump it. PyPI publish is optional / later.

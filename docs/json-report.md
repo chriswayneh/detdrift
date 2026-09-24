@@ -4,7 +4,11 @@
 `schema_version` is an integer. Consumers should check it before relying on
 new keys.
 
-Current version: **1**
+**1.0 report contract:** `schema_version` **1** is the stable contract for
+detdrift 1.x. Prefer keeping this integer at 1; bump it only for a real
+breaking JSON change (removed/renamed keys or changed value types).
+
+Current version: **1** (stable as of detdrift 1.0.0)
 
 ## Shape (schema_version 1)
 
@@ -70,3 +74,4 @@ included:
   `schema_version`.
 - Removing or renaming a key, or changing value types, bumps
   `schema_version`.
+- Exit codes `0` / `1` / `2` are part of the 1.0 CLI contract (see README).

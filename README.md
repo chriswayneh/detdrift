@@ -2,7 +2,7 @@
 
 If a telemetry field mapping changes, which detection rules go quiet?
 
-detdrift is a small CLI you can run locally or in CI. Give it your rules (Sigma by default; optional KQL/SPL) plus a before and after NDJSON sample. It tells you which rules still need fields that disappeared after the change. It does not run detections, and it is not a SIEM.
+detdrift **1.0** is a small CLI you can run locally or in CI. Give it your rules (Sigma by default; optional KQL/SPL) plus a before and after NDJSON sample. It tells you which rules still need fields that disappeared after the change. It does not run detections, and it is not a SIEM. The JSON report (`schema_version` 1) and exit codes are the stable 1.0 contract.
 
 Example: `CommandLine` gets renamed to `cmd`. A whoami rule that keys on `CommandLine` shows up as IMPACTED.
 
@@ -48,11 +48,19 @@ Result: FAIL (detection coverage at risk)
 
 ## Install
 
+**From GitHub (recommended until PyPI):**
+
+```bash
+pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.0"
+```
+
+**Editable (dev):**
+
 ```bash
 pip install -e ".[dev]"
 ```
 
-Python 3.12 or newer. PyPI install (`pip install detdrift`) comes later.
+Python 3.12 or newer. PyPI (`pip install detdrift`) is optional and not published yet.
 
 ## Commands
 
@@ -91,7 +99,7 @@ detdrift diff -b fixtures/before -a fixtures/after -r rules --fail-on-tag attack
 When both filters are set, a rule must match severity and tag.
 
 
-## Propose a fix (Phase 2)
+## Propose a fix
 
 When `diff` reports IMPACTED rules, draft mapping notes or a patch for human review:
 
@@ -108,9 +116,9 @@ Heuristics suggest a rename only when the mapping is obvious (known aliases or a
 Agent skill: [`skills/detdrift/SKILL.md`](skills/detdrift/SKILL.md).
 
 
-## Other dialects (Phase 4)
+## Other dialects
 
-Sigma is the default. Optional **KQL** (v0.5) and **SPL** (v0.6) extractors collect simple field references - not query engines and not matchers.
+Sigma is the default. Optional **KQL** and **SPL** extractors collect simple field references - not query engines and not matchers. Part of the 1.0 dialect surface.
 
 ```bash
 # list fields from a .kql / .spl file (auto-detect by extension)
@@ -160,7 +168,7 @@ The workflow file is at [`.github/workflows/detdrift.yml`](.github/workflows/det
 Other repos can call the composite action at the repo root (`action.yml`):
 
 ```yaml
-- uses: chriswayneh/detdrift@main
+- uses: chriswayneh/detdrift@v1.0.0
   with:
     before: samples/before.jsonl
     after: samples/after.jsonl
@@ -173,12 +181,12 @@ Other repos can call the composite action at the repo root (`action.yml`):
 
 Action input `dialect` is passed through to `detdrift diff --dialect` (`sigma` by default).
 
-Pin a release tag when you have one (for example `@v0.6.1`) instead of `@main`.
+Pin a release tag (for example `@v1.0.0`) instead of `@main`.
 
 Or install and run the CLI yourself:
 
 ```yaml
-- run: pip install "detdrift @ git+https://github.com/chriswayneh/detdrift.git@main"
+- run: pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.0"
 - run: detdrift diff --before samples/before.jsonl --after samples/after.jsonl --rules detections/
 ```
 
@@ -198,8 +206,9 @@ Current limits:
 ## Docs
 
 - [Architecture](ARCHITECTURE.md)
-- [Roadmap](ROADMAP.md) (phases 0 to 4)
-- [JSON report schema](docs/json-report.md)
+- [Roadmap](ROADMAP.md) (phases 0 to 4; 1.0 shipped)
+- [Changelog](CHANGELOG.md)
+- [JSON report schema](docs/json-report.md) (1.0 contract; `schema_version` 1)
 - [Dogfood notes](docs/dogfood.md) (SigmaHQ process_creation pack)
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)

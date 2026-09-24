@@ -30,5 +30,5 @@ you trust or have reviewed, especially in CI that checks out third-party rules.
 
 ## Supported versions
 
-Security fixes land on the latest release line on `main`. Older 0.x tags may
-not receive backports while the project is pre-1.0.
+Security fixes land on the latest **1.x** release line on `main`. Older 0.x
+tags are unsupported and may not receive backports.

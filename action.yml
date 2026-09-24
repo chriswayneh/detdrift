@@ -1,7 +1,8 @@
 name: detdrift
 description: >
-  Check whether Sigma rules lose fields after a telemetry schema change.
-  Fails the job when IMPACTED rules match the optional severity filter.
+  Check whether detection rules lose fields after a telemetry schema change
+  (Sigma default; optional KQL/SPL via dialect). Fails the job when IMPACTED
+  rules match the optional severity filter.
 author: Christopher Hickman
 
 branding:

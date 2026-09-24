@@ -10,7 +10,7 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 | **1** | Harden | Better field extraction; reusable Action | Shipped (v0.2) |
 | **2** | Assist | Optional propose-patch helper and agent skill | Shipped (v0.3) |
 | **3** | Connect | Import common export formats; SARIF / PR notes | Shipped (v0.4) |
-| **4** | Broaden | Optional support for other rule languages | Started (v0.5-0.6) |
+| **4** | Broaden | Optional support for other rule languages | Shipped (v1.0) |
 
 ## Phase 0: Foundation (v0.1)
 
@@ -70,19 +70,25 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 **Shipped:** v0.4.0 warnings; v0.4.1 SARIF; v0.4.2 flat JSON / fields-list / event-array samples + docs/importers.md + docs/ci/sarif-example.yml.
 
-## Phase 4: Broaden (v1.x, optional)
+## Phase 4: Broaden (v1.0)
 
 **Goal:** Same question for more rule languages, only if earlier phases stick.
 
 - [x] Pluggable field extractors - simple **KQL** field refs (v0.5.0; `--dialect sigma|kql|auto`)
 - [x] Optional **SPL** field refs (v0.6.0; `--dialect sigma|kql|spl|auto`)
 - [x] Action `dialect` input (`sigma|kql|spl|auto`) wired to `detdrift diff` (v0.6.1)
-- [ ] Stable 1.0 contract for schema and report JSON
-- [ ] Publish on PyPI: `pip install detdrift`
+- [x] Stable 1.0 contract for schema and report JSON (`schema_version` 1 frozen; see docs/json-report.md)
+- [ ] Publish on PyPI: `pip install detdrift` (optional / later; install from GitHub for now)
 
-**Shipped so far:** v0.5.0 KQL (`where` / `project` / `summarize by` / `sort by`); v0.6.0 SPL (`Field=` / `stats ... by` / `table` / `rex field=`). Not query engines. Sigma remains the default. See README "Other dialects".
+**Shipped:** v0.5.0 KQL; v0.6.0 SPL; v0.6.1 Action dialect; **v1.0.0** stable report contract + dialects. Not query engines. Sigma remains the default. See README "Other dialects".
 
-**Done when:** a second rule dialect works behind the same CLI, and the version is 1.0.
+**Done when:** a second rule dialect works behind the same CLI, and the version is 1.0. **Met in v1.0.0.**
+
+## After 1.0 (optional)
+
+- PyPI publish when a token/workflow is ready
+- Deeper dialect coverage only if dogfood shows clear gaps (still not query engines)
+- Importer / reporter polish as needed
 
 ## Not on the roadmap
 
@@ -106,3 +112,4 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 1. Finish Phase 0 polish (docs voice, workflow in `.github/workflows`).
 2. Run Phase 1 against a real rules folder or a public Sigma pack. (Done: see docs/dogfood.md)
 3. Phase 2 Assist shipped (v0.3.0): propose-patch + skill. Keep offline; no auto-apply.
+4. Phase 3–4 shipped through v1.0.0. PyPI remains optional.
