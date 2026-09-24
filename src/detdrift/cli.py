@@ -42,6 +42,12 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit(0)
 
 
+def _split_csv(value: Optional[str]) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
 @app.callback()
 def main(
     version: Optional[bool] = typer.Option(
@@ -65,10 +71,38 @@ def diff_cmd(
     output: Optional[Path] = typer.Option(
         None, "--output", "-o", help="Write report to file (in addition to stdout)"
     ),
+    fail_on_severity: Optional[str] = typer.Option(
+        None,
+        "--fail-on-severity",
+        help=(
+            "Only exit 1 when an IMPACTED rule has this severity or higher. "
+            "Comma-separated Sigma levels, e.g. high,critical. "
+            "Without this flag, any IMPACTED rule fails the run."
+        ),
+    ),
+    fail_on_tag: Optional[str] = typer.Option(
+        None,
+        "--fail-on-tag",
+        help=(
+            "Only exit 1 when an IMPACTED rule has a matching tag. "
+            "Comma-separated substrings matched case-insensitively against rule tags, "
+            "e.g. attack.t1059,persistence. "
+            "Can combine with --fail-on-severity (both must match)."
+        ),
+    ),
+    ignore: Optional[list[str]] = typer.Option(
+        None,
+        "--ignore",
+        help=(
+            "Extra fnmatch glob to skip under --rules (repeatable). "
+            "Default ignored dir names: .git, .github, vendor, tests, and similar. "
+            "Example: --ignore '*_test.yml' --ignore 'fixtures/**'"
+        ),
+    ),
 ) -> None:
     """Compare before/after schemas and report Sigma rules that would go silent."""
     try:
-        report = diff_rules(before, after, rules)
+        report = diff_rules(before, after, rules, ignore=ignore)
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
@@ -76,15 +110,38 @@ def diff_cmd(
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
 
+    sev_filters = _split_csv(fail_on_severity)
+    tag_filters = _split_csv(fail_on_tag)
+    filters_active = bool(sev_filters or tag_filters)
+    fail_matches = report.matching_impacts(
+        fail_on_severity=sev_filters or None,
+        fail_on_tags=tag_filters or None,
+    )
+
     if json_out:
-        text = json.dumps(report.to_dict(), indent=2)
+        payload = report.to_dict()
+        if filters_active:
+            payload["fail_on"] = {
+                "severity": sev_filters,
+                "tags": tag_filters,
+                "matched_count": len(fail_matches),
+                "matched_rules": [m.rule for m in fail_matches],
+            }
+        text = json.dumps(payload, indent=2)
     else:
-        text = format_report_human(report)
+        text = format_report_human(
+            report,
+            fail_matches=fail_matches if filters_active else None,
+            fail_on_severity=sev_filters if filters_active else None,
+            fail_on_tags=tag_filters if filters_active else None,
+        )
 
     typer.echo(text)
     if output is not None:
         output.write_text(text + "\n", encoding="utf-8")
 
+    if filters_active:
+        raise typer.Exit(1 if fail_matches else 0)
     raise typer.Exit(1 if report.has_impacts else 0)
 
 

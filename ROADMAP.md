@@ -7,7 +7,7 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 | Phase | Name | Outcome | Status |
 |-------|------|---------|--------|
 | **0** | Foundation | Public repo, working CLI, demo fixtures, CI, docs | Shipped |
-| **1** | Harden | Better field extraction; reusable Action | Next |
+| **1** | Harden | Better field extraction; reusable Action | Shipped (v0.2) |
 | **2** | Assist | Optional propose-patch helper and agent skill | Later |
 | **3** | Connect | Import common export formats; SARIF / PR notes | Later |
 | **4** | Broaden | Optional support for other rule languages | Optional |
@@ -32,12 +32,12 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 **Goal:** Hold up against real detection repos without turning into a matcher.
 
-- Stronger Sigma field extraction (lists under selections, common nested paths)
-- Recursive rules discovery with clear ignore patterns
-- Documented, versioned JSON report shape
-- `--fail-on` style filters (for example by severity or tags)
-- Reusable GitHub Action (`uses: chriswayneh/detdrift/...`)
-- CONTRIBUTING and SECURITY docs
+- [x] Stronger Sigma field extraction (lists under selections, common nested paths)
+- [x] Recursive rules discovery with clear ignore patterns
+- [x] Documented, versioned JSON report shape (`schema_version`: 1)
+- [x] `--fail-on-severity` / `--fail-on-tag` filters
+- [x] Reusable GitHub Action (`action.yml`, `uses: chriswayneh/detdrift@...`)
+- [x] CONTRIBUTING and SECURITY docs
 
 **Done when:** it runs cleanly on a public Sigma sample set, and another repo can call the Action.
 

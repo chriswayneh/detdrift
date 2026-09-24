@@ -1,0 +1,74 @@
+name: detdrift
+description: >
+  Check whether Sigma rules lose fields after a telemetry schema change.
+  Fails the job when IMPACTED rules match the optional severity filter.
+author: Christopher Hickman
+
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  before:
+    description: Path to before NDJSON file or directory
+    required: true
+  after:
+    description: Path to after NDJSON file or directory
+    required: true
+  rules:
+    description: Directory of Sigma YAML rules
+    required: true
+  fail-on-severity:
+    description: >
+      Optional. Comma-separated Sigma levels (e.g. high,critical).
+      When set, the step exits 1 only if an IMPACTED rule meets the filter.
+      Leave empty to fail on any IMPACTED rule.
+    required: false
+    default: ""
+  fail-on-tag:
+    description: >
+      Optional. Comma-separated tag substrings (e.g. attack.t1059).
+      When set (alone or with fail-on-severity), only matching IMPACTED rules fail the step.
+    required: false
+    default: ""
+  python-version:
+    description: Python version for setup-python
+    required: false
+    default: "3.12"
+  working-directory:
+    description: Working directory for the diff command (caller repo root by default)
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install detdrift from action
+      shell: bash
+      run: |
+        set -euo pipefail
+        pip install "${{ github.action_path }}"
+
+    - name: Run detdrift diff
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        args=(
+          diff
+          --before "${{ inputs.before }}"
+          --after "${{ inputs.after }}"
+          --rules "${{ inputs.rules }}"
+        )
+        if [ -n "${{ inputs.fail-on-severity }}" ]; then
+          args+=(--fail-on-severity "${{ inputs.fail-on-severity }}")
+        fi
+        if [ -n "${{ inputs.fail-on-tag }}" ]; then
+          args+=(--fail-on-tag "${{ inputs.fail-on-tag }}")
+        fi
+        detdrift "${args[@]}"

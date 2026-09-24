@@ -39,6 +39,7 @@ Removed fields:   CommandLine
 IMPACTED (1): rules that would go quiet
   x proc_whoami.yml
       title:   Whoami Execution
+      level:   low
       missing: CommandLine
       refs:    CommandLine, Image
 
@@ -57,40 +58,74 @@ Python 3.12 or newer. PyPI install (`pip install detdrift`) comes later.
 
 | Command | What it does |
 |--------|----------------|
-| `detdrift diff -b BEFORE -a AFTER -r RULES` | Main check. Exit 1 if any rule is impacted. |
+| `detdrift diff -b BEFORE -a AFTER -r RULES` | Main check. Exit 1 if any rule is impacted (or if a fail-on filter matches). |
 | `detdrift fields RULE.yml` | List field names pulled from one rule. |
 | `detdrift init [DIR]` | Write sample rules and before/after fixtures. |
 
 Useful `diff` flags:
 
-- `--json` for a machine-readable report
+- `--json` for a machine-readable report (see [JSON report](docs/json-report.md))
 - `-o` / `--output PATH` to also write the report to a file
+- `--fail-on-severity high,critical` to exit 1 only when an IMPACTED rule is at least that severe (still prints all IMPACTED rules)
+- `--fail-on-tag attack.t1059` to exit 1 only when an IMPACTED rule has a matching tag (substring, case-insensitive)
+- `--ignore GLOB` to skip extra rule paths (repeatable). Default ignored directory names include `.git`, `.github`, `vendor`, and `tests`
 
-`BEFORE` and `AFTER` can be one NDJSON/JSONL file or a directory of them.
+`BEFORE` and `AFTER` can be one NDJSON/JSONL file or a directory of them. Rules under `--rules` are found recursively (`*.yml` / `*.yaml`).
+
+### Fail-on example
+
+The demo whoami rule is `level: low`. With a rename that impacts it:
+
+```bash
+# still prints IMPACTED, but exit 0 because low is below the filter
+detdrift diff -b fixtures/before -a fixtures/after -r rules --fail-on-severity high,critical
+
+# exit 1 only if an IMPACTED rule carries a matching tag
+detdrift diff -b fixtures/before -a fixtures/after -r rules --fail-on-tag attack.t1059
+```
+
+When both filters are set, a rule must match severity and tag.
 
 ## How it works
 
 1. Build a field set from the before samples (top-level keys, plus one level of nested keys).
 2. Do the same for the after samples.
-3. Walk each Sigma `detection` block, collect selection field names, and drop modifiers after `|` (so `CommandLine|contains` becomes `CommandLine`).
+3. Walk each Sigma `detection` block, collect selection field names (including lists of maps and common nested paths), and drop modifiers after `|` (so `CommandLine|contains` becomes `CommandLine`).
 4. If a rule references a field that exists before and is missing after, mark it IMPACTED.
 
 Exit codes:
 
 | Code | Meaning |
 |------|---------|
-| 0 | No impacted rules |
-| 1 | At least one rule would go quiet |
+| 0 | No failing IMPACTED rules (none at all, or none matching `--fail-on-*`) |
+| 1 | At least one rule would go quiet (or matched the fail-on filter) |
 | 2 | Bad paths or parse errors |
 
 ## CI
 
 The workflow file is at [`.github/workflows/detdrift.yml`](.github/workflows/detdrift.yml). It runs the tests and checks the demo exit codes.
 
-In your own pipeline:
+### Reusable Action
+
+Other repos can call the composite action at the repo root (`action.yml`):
 
 ```yaml
-- run: pip install detdrift
+- uses: chriswayneh/detdrift@main
+  with:
+    before: samples/before.jsonl
+    after: samples/after.jsonl
+    rules: detections/
+    # optional:
+    # fail-on-severity: high,critical
+    # fail-on-tag: attack.t1059
+```
+
+Pin a release tag when you have one (for example `@v0.2.0`) instead of `@main`.
+
+Or install and run the CLI yourself:
+
+```yaml
+- run: pip install "detdrift @ git+https://github.com/chriswayneh/detdrift.git@main"
 - run: detdrift diff --before samples/before.jsonl --after samples/after.jsonl --rules detections/
 ```
 
@@ -103,7 +138,7 @@ In your own pipeline:
 Current limits:
 
 - Keyword-only detections (no field keys) do not produce references, so they will not show as IMPACTED
-- Nested paths deeper than one level are not expanded
+- Nested event paths deeper than one level in NDJSON samples are not expanded
 - Modifiers are stripped; values are not validated
 - Multi-document YAML and correlations are out of scope
 
@@ -111,6 +146,9 @@ Current limits:
 
 - [Architecture](ARCHITECTURE.md)
 - [Roadmap](ROADMAP.md) (phases 0 to 4)
+- [JSON report schema](docs/json-report.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
 
 ## License
 

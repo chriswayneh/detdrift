@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import yaml
-
 from detdrift.fields import (
     extract_fields_from_detection,
     extract_fields_from_file,
@@ -59,6 +57,52 @@ def test_extract_dotted_field():
     assert "winlog.event_data.CommandLine" in fields
 
 
+def test_list_of_maps_under_selection():
+    """Common Sigma pattern: selection is a list of field maps (OR)."""
+    detection = {
+        "selection": [
+            {"Image|endswith": "\\whoami.exe"},
+            {"CommandLine|contains": "whoami"},
+            {"OriginalFileName|endswith": "whoami.exe"},
+        ],
+        "condition": "selection",
+    }
+    fields = extract_fields_from_detection(detection)
+    assert fields == {"Image", "CommandLine", "OriginalFileName"}
+
+
+def test_nested_dict_field_paths():
+    """Nested dict under a field-like key yields dotted paths."""
+    detection = {
+        "selection": {
+            "EventData": {
+                "CommandLine|contains": "whoami",
+                "Image|endswith": "\\cmd.exe",
+            }
+        },
+        "condition": "selection",
+    }
+    fields = extract_fields_from_detection(detection)
+    assert "EventData" in fields
+    assert "EventData.CommandLine" in fields
+    assert "EventData.Image" in fields
+
+
+def test_list_of_maps_with_modifiers_mixed():
+    detection = {
+        "selection_cmd": [
+            {
+                "Image|endswith": ["\\cmd.exe", "/bin/bash"],
+                "CommandLine|contains|all": ["whoami", "/all"],
+            },
+            {"ParentImage|endswith": "\\explorer.exe"},
+        ],
+        "condition": "selection_cmd",
+    }
+    fields = extract_fields_from_detection(detection)
+    assert fields == {"Image", "CommandLine", "ParentImage"}
+
+
 def test_sample_rule_file():
     fields = extract_fields_from_file(RULES / "proc_whoami.yml")
     assert fields == {"Image", "CommandLine"}
@@ -82,12 +126,7 @@ def test_keyword_only_no_fields():
         "keywords": ["mimikatz", "sekurlsa"],
         "condition": "keywords",
     }
-    # keywords list of scalars under a non-field-map-looking structure -
-    # "keywords" with scalar list gets treated as a field name by the walker.
-    # For true keyword searches Sigma uses a list under a named group; our
-    # extractor will collect "keywords" as a field. Document that limitation
-    # by asserting current behavior OR skip collecting known keyword keys.
-    # Prefer: keyword groups with only string lists and no field maps → empty-ish.
     fields = extract_fields_from_detection(detection)
-    # Accept either empty or {"keywords"} - refine: strip known non-fields
     assert "mimikatz" not in fields
+    assert "sekurlsa" not in fields
+    assert "keywords" not in fields

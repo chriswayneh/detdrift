@@ -55,18 +55,20 @@ flowchart LR
 | `cli.py` | Commands: `diff`, `fields`, `init` |
 | `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory) |
 | `fields.py` | Walk Sigma `detection` selections, strip `|modifiers`, collect field paths |
-| `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after |
+| `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after; recursive discovery; fail-on helpers |
 | samples | `fixtures/before`, `fixtures/after`, `rules/` for the demo |
 | CI | `.github/workflows/detdrift.yml` runs pytest and exit-code checks |
+| Action | Root `action.yml` composite action for external repos |
+| JSON | `docs/json-report.md` documents `schema_version` |
 
 ## Data flow (`detdrift diff`)
 
 1. Load the before schema as the union of event field paths.
 2. Load the after schema the same way.
-3. Find Sigma YAML under `--rules`.
-4. For each rule, extract referenced fields from `detection` (v0.1 ignores `condition` logic).
+3. Recursively find Sigma YAML under `--rules` (skipping `.git`, `.github`, `vendor`, `tests`, and similar).
+4. For each rule, extract referenced fields from `detection` (still ignores `condition` logic).
 5. Mark IMPACTED when any referenced field is present before and absent after.
-6. Print the report. Exit `1` if any rule is IMPACTED, `2` on I/O or parse errors, otherwise `0`.
+6. Print the report. Exit `1` if any rule is IMPACTED (or if a `--fail-on-*` filter matches), `2` on I/O or parse errors, otherwise `0`.
 
 ## Schema model (v0.1)
 
@@ -115,6 +117,8 @@ rules/            demo Sigma
 fixtures/         before/after NDJSON
 tests/            unit tests
 examples/         demo.sh
+docs/             JSON report contract and CI copies
+action.yml        reusable composite GitHub Action
 .github/workflows CI
 ```
 
