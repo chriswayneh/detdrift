@@ -66,6 +66,7 @@ Python 3.12 or newer. PyPI install (`pip install detdrift`) comes later.
 Useful `diff` flags:
 
 - `--json` for a machine-readable report (see [JSON report](docs/json-report.md))
+- `--format sarif` (or `--format json`) for SARIF 2.1.0 / JSON; upload via docs/ci/sarif-example.yml
 - `-o` / `--output PATH` to also write the report to a file
 - `--fail-on-severity high,critical` to exit 1 only when an IMPACTED rule is at least that severe (still prints all IMPACTED rules)
 - `--fail-on-tag attack.t1059` to exit 1 only when an IMPACTED rule has a matching tag (substring, case-insensitive)

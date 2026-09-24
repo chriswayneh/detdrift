@@ -56,11 +56,12 @@ flowchart LR
 
 | Module | Role |
 |--------|------|
-| `cli.py` | Commands: `diff`, `fields`, `propose-patch`, `init` |
+| `cli.py` | Commands: `diff`, `fields`, `propose-patch`, `init` (`diff --format human|json|sarif`) |
 | `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory); sample stats + empty/incomplete warnings |
 | `fields.py` | Walk Sigma `detection` selections, strip `|modifiers`, collect field paths |
 | `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after; recursive discovery; fail-on helpers |
 | `propose.py` | Heuristic rename suggestions; mapping notes or draft unified diffs (stdout/`--output` only) |
+| `sarif.py` | SARIF 2.1.0 export from DiffReport for CI / PR annotations |
 | samples | `fixtures/before`, `fixtures/after`, `rules/` for the demo |
 | CI | `.github/workflows/detdrift.yml` runs pytest and exit-code checks |
 | Action | Root `action.yml` composite action for external repos |

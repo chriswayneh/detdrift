@@ -63,12 +63,12 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 - Importers for common export shapes (for example flattened CloudTrail or Sysmon NDJSON packs)
 - Optional OCSF profile hints (not the main product story)
-- SARIF output and PR check annotations
+- [x] SARIF output and PR check annotations (v0.4.1; see docs/ci/sarif-example.yml)
 - [x] Warn when an after sample is empty or clearly incomplete (an empty file is not the same as "nothing removed") (v0.4.0)
 
 **Done when:** one importer and a SARIF path show up in a CI example.
 
-**Shipped so far:** v0.4.0 empty/incomplete after-sample warnings (human + JSON + stderr).
+**Shipped so far:** v0.4.0 empty/incomplete after-sample warnings; v0.4.1 SARIF (`--format sarif`).
 
 ## Phase 4: Broaden (v1.x, optional)
 

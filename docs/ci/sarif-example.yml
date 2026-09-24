@@ -1,0 +1,60 @@
+# Example: upload detdrift SARIF for PR annotations.
+# Copy into your repo workflow and point before/after/rules at your samples.
+#
+# name: detdrift-sarif
+# on: [pull_request]
+#
+# jobs:
+#   detdrift:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       security-events: write
+#       contents: read
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.12"
+#       - run: pip install "detdrift @ git+https://github.com/chriswayneh/detdrift.git@v0.4.1"
+#       - name: Run detdrift (SARIF)
+#         continue-on-error: true
+#         run: |
+#           detdrift diff \
+#             --before fixtures/before \
+#             --after fixtures/after \
+#             --rules rules \
+#             --format sarif \
+#             --output detdrift.sarif
+#       - name: Upload SARIF
+#         uses: github/codeql-action/upload-sarif@v3
+#         with:
+#           sarif_file: detdrift.sarif
+#
+# Note: detdrift still exits 1 on IMPACTED rules. Use continue-on-error on the
+# run step if you want annotations without failing the job, or keep fail-on
+# filters. Offline; not a SIEM.
+
+name: detdrift-sarif-example
+on:
+  workflow_dispatch: {}
+
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - name: Emit SARIF for demo drift
+        continue-on-error: true
+        run: |
+          detdrift diff \
+            --before fixtures/before \
+            --after fixtures/after \
+            --rules rules \
+            --format sarif \
+            --output detdrift.sarif
+      - name: Show SARIF summary
+        run: python -c "import json; d=json.load(open('detdrift.sarif')); print(len(d['runs'][0]['results']), 'results')"

@@ -13,6 +13,7 @@ from detdrift import __version__
 from detdrift.diff import diff_rules, format_report_human
 from detdrift.fields import extract_fields_from_file
 from detdrift.propose import format_propose, propose_from_paths
+from detdrift.sarif import format_sarif
 
 app = typer.Typer(
     name="detdrift",
@@ -68,7 +69,12 @@ def diff_cmd(
     before: Path = typer.Option(..., "--before", "-b", help="Before NDJSON file or directory"),
     after: Path = typer.Option(..., "--after", "-a", help="After NDJSON file or directory"),
     rules: Path = typer.Option(..., "--rules", "-r", help="Directory of Sigma YAML rules"),
-    json_out: bool = typer.Option(False, "--json", help="Emit machine-readable JSON report"),
+    json_out: bool = typer.Option(False, "--json", help="Emit machine-readable JSON report (alias for --format json)"),
+    format_opt: Optional[str] = typer.Option(
+        None,
+        "--format",
+        help="Report format: human (default), json, or sarif (for PR annotations)",
+    ),
     output: Optional[Path] = typer.Option(
         None, "--output", "-o", help="Write report to file (in addition to stdout)"
     ),
@@ -123,7 +129,20 @@ def diff_cmd(
         fail_on_tags=tag_filters or None,
     )
 
-    if json_out:
+    fmt = (format_opt or "").strip().lower()
+    if json_out and not fmt:
+        fmt = "json"
+    if not fmt:
+        fmt = "human"
+    if fmt not in {"human", "json", "sarif"}:
+        typer.secho(
+            f"Unknown --format {format_opt!r}; use human, json, or sarif",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(2)
+
+    if fmt == "json":
         payload = report.to_dict()
         if filters_active:
             payload["fail_on"] = {
@@ -133,6 +152,8 @@ def diff_cmd(
                 "matched_rules": [m.rule for m in fail_matches],
             }
         text = json.dumps(payload, indent=2)
+    elif fmt == "sarif":
+        text = format_sarif(report)
     else:
         text = format_report_human(
             report,
