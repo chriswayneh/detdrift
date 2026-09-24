@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 if ! command -v detdrift >/dev/null 2>&1; then
-  echo "detdrift not on PATH — install with: pip install -e '.[dev]'" >&2
+  echo "detdrift not on PATH; install with: pip install -e '.[dev]'" >&2
   exit 2
 fi
 
@@ -18,7 +18,7 @@ set -e
 echo "exit=$green"
 echo
 
-echo "==> Red path: before vs after (CommandLine renamed to cmd — expect exit 1)"
+echo "==> Red path: before vs after (CommandLine renamed to cmd; expect exit 1)"
 set +e
 detdrift diff --before fixtures/before --after fixtures/after --rules rules
 red=$?
@@ -27,7 +27,7 @@ echo "exit=$red"
 echo
 
 if [[ "$green" -eq 0 && "$red" -eq 1 ]]; then
-  echo "Demo OK — schema drift correctly flagged the whoami rule."
+  echo "Demo OK: schema drift correctly flagged the whoami rule."
   exit 0
 fi
 

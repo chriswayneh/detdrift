@@ -1,134 +1,117 @@
 # detdrift
 
-**If this telemetry field mapping changes, which detection rules go silent?**
+If a telemetry field mapping changes, which Sigma rules go quiet?
 
-`detdrift` is a tiny CLI + CI check: point it at Sigma rules and a before/after NDJSON sample (or schema), and it reports which rules reference fields that existed *before* but vanished *after*. Schema drift → detection blast radius. Not a SIEM. Not a full Sigma match engine.
+detdrift is a small CLI you can run locally or in CI. Give it your Sigma rules plus a before and after NDJSON sample. It tells you which rules still need fields that disappeared after the change. It does not run detections, and it is not a SIEM.
 
-```
-CommandLine → cmd   ──►  proc_whoami.yml goes dark
-```
+Example: `CommandLine` gets renamed to `cmd`. A whoami rule that keys on `CommandLine` shows up as IMPACTED.
 
-## Why
+## Why bother
 
-Pipelines rename fields. ECS mappings shift. A vendor agent update quietly drops `CommandLine` for `cmd`. Your Sigma library still deploys. Nothing alerts — because nothing *can* alert.
+Pipelines rename fields. ECS mappings shift. A vendor agent update swaps `CommandLine` for `cmd`. Your Sigma pack still deploys. Nothing fires, because the fields the rules expect are gone.
 
-Most tools ask "does this event match?" detdrift asks **"will this rule ever see its fields again?"**
+Most tools ask whether an event matches a rule. detdrift asks whether the rule can still see the fields it depends on.
 
-## 60-second demo
+## Quick demo
 
 ```bash
 pip install -e ".[dev]"
 
-# identical schemas → green
+# same schema on both sides: exit 0
 detdrift diff --before fixtures/before --after fixtures/before --rules rules
-# exit 0
 
-# CommandLine renamed to cmd → red
+# CommandLine renamed to cmd: exit 1
 detdrift diff --before fixtures/before --after fixtures/after --rules rules
-# exit 1 — IMPACTED: proc_whoami.yml (missing: CommandLine)
 
-# or:
 ./examples/demo.sh
 ```
 
-Sample output (drift case):
+Sample output when fields drift:
 
 ```
-detdrift — schema → detection blast radius
+detdrift: schema change vs Sigma rules
 ================================================
 Rules scanned:    1
 Before fields:    3
 After fields:     3
 Removed fields:   CommandLine
 
-IMPACTED (1) — rules that would go silent:
-  ✗ proc_whoami.yml
+IMPACTED (1): rules that would go quiet
+  x proc_whoami.yml
       title:   Whoami Execution
       missing: CommandLine
       refs:    CommandLine, Image
 
-Result: FAIL — detection coverage at risk.
+Result: FAIL (detection coverage at risk)
 ```
 
 ## Install
 
 ```bash
-pip install -e ".[dev]"   # from a clone
-# or once published:
-# pip install detdrift
+pip install -e ".[dev]"
 ```
 
-Requires Python 3.12+.
+Python 3.12 or newer. PyPI install (`pip install detdrift`) comes later.
 
 ## Commands
 
-| Command | Purpose |
-|--------|---------|
-| `detdrift diff -b BEFORE -a AFTER -r RULES` | Main: blast-radius report; exit **1** if any rule impacted |
-| `detdrift fields RULE.yml` | Debug: list field refs extracted from one rule |
-| `detdrift init [DIR]` | Drop sample rules + before/after fixtures |
+| Command | What it does |
+|--------|----------------|
+| `detdrift diff -b BEFORE -a AFTER -r RULES` | Main check. Exit 1 if any rule is impacted. |
+| `detdrift fields RULE.yml` | List field names pulled from one rule. |
+| `detdrift init [DIR]` | Write sample rules and before/after fixtures. |
 
-Options for `diff`:
+Useful `diff` flags:
 
-- `--json` — machine-readable report
-- `-o/--output PATH` — also write the report to a file
+- `--json` for a machine-readable report
+- `-o` / `--output PATH` to also write the report to a file
 
-`BEFORE` / `AFTER` may be a single NDJSON/JSONL file or a directory of them.
+`BEFORE` and `AFTER` can be one NDJSON/JSONL file or a directory of them.
 
 ## How it works
 
-1. **Schema** — union of top-level keys across NDJSON events (plus one-level dotted paths for nested objects).
-2. **Fields** — walk each Sigma `detection` block; collect selection keys; strip modifiers after `|` (`CommandLine|contains` → `CommandLine`).
-3. **Diff** — for each rule, if any referenced field ∈ before and ∉ after → **IMPACTED**.
+1. Build a field set from the before samples (top-level keys, plus one level of nested keys).
+2. Do the same for the after samples.
+3. Walk each Sigma `detection` block, collect selection field names, and drop modifiers after `|` (so `CommandLine|contains` becomes `CommandLine`).
+4. If a rule references a field that exists before and is missing after, mark it IMPACTED.
 
-Exit codes (CI-friendly):
+Exit codes:
 
 | Code | Meaning |
 |------|---------|
 | 0 | No impacted rules |
-| 1 | ≥1 rule would go silent |
-| 2 | Bad paths / parse errors |
+| 1 | At least one rule would go quiet |
+| 2 | Bad paths or parse errors |
 
-## GitHub Action / CI
+## CI
 
-CI workflow definition lives at [`docs/ci/detdrift.yml`](docs/ci/detdrift.yml) (copy into `.github/workflows/` in your fork or this repo once your GitHub token has the `workflow` scope). It runs pytest and asserts:
+The workflow file is at [`.github/workflows/detdrift.yml`](.github/workflows/detdrift.yml). It runs the tests and checks the demo exit codes.
 
-- before vs before → exit 0
-- before vs after (demo rename) → exit 1
-
-Wire it into your own pipeline:
+In your own pipeline:
 
 ```yaml
 - run: pip install detdrift
 - run: detdrift diff --before samples/before.jsonl --after samples/after.jsonl --rules detections/
 ```
 
-## Scope (sharp edges)
+## What this is and is not
 
-**This is**
+**Is:** a check for Sigma field references against a schema change. A CI gate for mapping edits. A small helper (`fields`) for seeing what a rule touches.
 
-- Schema blast-radius analysis for Sigma field references
-- A CI gate for telemetry mapping changes
-- A debug aid (`fields`) for what a rule actually touches
+**Is not:** a Sigma matcher, correlator, or SIEM. It does not evaluate `condition` blocks. A rule that is not IMPACTED still might not fire for other reasons. This only says the fields it names are still present.
 
-**This is not**
+Current limits:
 
-- A Sigma matcher / correlator / SIEM
-- A full Sigma compiler (no `condition` evaluation, no pipelines, no backends)
-- A guarantee that a "SAFE" rule will fire — only that its *referenced fields still exist*
-
-Known limitations of the MVP:
-
-- Keyword-only detections (no field keys) are not meaningful here
-- Nested paths beyond one level under event dicts are not expanded
-- Modifiers are stripped; lists/maps under fields are not semantically validated
-- Multi-document YAML and rule correlations are out of scope
+- Keyword-only detections (no field keys) do not produce references, so they will not show as IMPACTED
+- Nested paths deeper than one level are not expanded
+- Modifiers are stripped; values are not validated
+- Multi-document YAML and correlations are out of scope
 
 ## Docs
 
 - [Architecture](ARCHITECTURE.md)
-- [Roadmap](ROADMAP.md) — phases 0–4
+- [Roadmap](ROADMAP.md) (phases 0 to 4)
 
 ## License
 
-MIT © 2026 Christopher Hickman
+MIT (c) 2026 Christopher Hickman

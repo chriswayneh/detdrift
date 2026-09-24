@@ -1,3 +1,2 @@
-"""detdrift — schema-diff → detection blast radius for Sigma rules."""
-
+"""detdrift: report which Sigma rules lose fields after a schema change."""
 __version__ = "0.1.0"

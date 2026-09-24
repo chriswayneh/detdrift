@@ -1,4 +1,4 @@
-"""Diff before/after schemas against Sigma rules → blast-radius report."""
+"""Compare before/after schemas to Sigma rules and report impact."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ class RuleImpact:
 
 @dataclass
 class DiffReport:
-    """Full blast-radius report across a rules directory."""
+    """Full impact report across a rules directory."""
 
     before_fields: list[str]
     after_fields: list[str]
@@ -152,9 +152,9 @@ def diff_rules(
 
 
 def format_report_human(report: DiffReport) -> str:
-    """Render a human-readable blast-radius report."""
+    """Render a human-readable impact report."""
     lines: list[str] = []
-    lines.append("detdrift — schema → detection blast radius")
+    lines.append("detdrift: schema change vs Sigma rules")
     lines.append("=" * 48)
     lines.append(f"Rules scanned:    {report.rules_scanned}")
     lines.append(f"Before fields:    {len(report.before_fields)}")
@@ -168,33 +168,33 @@ def format_report_human(report: DiffReport) -> str:
     safe = report.safe
 
     if impacted:
-        lines.append(f"IMPACTED ({len(impacted)}) — rules that would go silent:")
+        lines.append(f"IMPACTED ({len(impacted)}): rules that would go quiet")
         for item in impacted:
             miss = ", ".join(item.missing_fields)
-            lines.append(f"  ✗ {item.rule}")
+            lines.append(f"  x {item.rule}")
             lines.append(f"      title:   {item.title}")
             lines.append(f"      missing: {miss}")
             lines.append(f"      refs:    {', '.join(item.referenced_fields)}")
         lines.append("")
     else:
-        lines.append("IMPACTED (0) — no rules lose fields present in before-schema.")
+        lines.append("IMPACTED (0): no rules lose fields from the before schema.")
         lines.append("")
 
     if safe:
-        lines.append(f"SAFE ({len(safe)}) — referenced fields still present:")
+        lines.append(f"SAFE ({len(safe)}): referenced fields still present")
         for item in safe:
             lines.append(f"  ✓ {item.rule}  ({', '.join(item.referenced_fields)})")
         lines.append("")
 
     unknown = [i for i in report.impacts if i.status == "UNKNOWN"]
     if unknown:
-        lines.append(f"UNKNOWN ({len(unknown)}) — no field references extracted:")
+        lines.append(f"UNKNOWN ({len(unknown)}): no field references extracted")
         for item in unknown:
             lines.append(f"  ? {item.rule}")
         lines.append("")
 
     if report.has_impacts:
-        lines.append("Result: FAIL — detection coverage at risk.")
+        lines.append("Result: FAIL (detection coverage at risk)")
     else:
-        lines.append("Result: PASS — no blast radius from this schema change.")
+        lines.append("Result: PASS (no rules lose fields from this schema change)")
     return "\n".join(lines)

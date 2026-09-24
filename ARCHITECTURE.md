@@ -2,19 +2,19 @@
 
 ## Purpose
 
-`detdrift` answers one question in CI and on a laptop:
+detdrift answers one question, locally or in CI:
 
-> If this telemetry schema changes, which Sigma detections go silent?
+> If this telemetry schema changes, which Sigma detections go quiet?
 
-It is a **schema → detection blast-radius** analyzer. It is not a SIEM, not a Sigma matcher, and not a data pipeline.
+It compares field sets before and after a change against the fields your Sigma rules name. It is not a SIEM, not a Sigma matcher, and not a data pipeline.
 
 ## Design principles
 
-1. **One job** — field-presence blast radius. Refuse feature creep into matching, enrichment, or storage.
-2. **Offline by default** — no network calls; only local rules and samples.
-3. **CI-native** — exit `0` / `1` / `2` are part of the contract.
-4. **Honest scope** — "SAFE" means referenced fields still exist, not that the rule will fire.
-5. **Complementary** — sits beside tools like [local-mcp-toolbox](https://github.com/chriswayneh/local-mcp-toolbox) (agent inspection) without owning agent runtime or SIEM ingest.
+1. **One job.** Report which rules lose fields they depend on. Do not grow into matching, enrichment, or storage.
+2. **Offline by default.** No network calls. Only local rules and samples.
+3. **Clear exit codes.** `0` / `1` / `2` are part of the interface for CI.
+4. **Honest results.** "SAFE" only means the referenced fields still exist. It does not mean the rule will fire.
+5. **Separate from other tools.** Works alongside [local-mcp-toolbox](https://github.com/chriswayneh/local-mcp-toolbox). It does not own agent runtime or SIEM ingest.
 
 ## Context
 
@@ -27,9 +27,9 @@ flowchart LR
   end
 
   subgraph core [detdrift core]
-    S[schema.py\nfield set union]
-    F[fields.py\nrule field refs]
-    D[diff.py\nblast radius]
+    S[schema.py field set union]
+    F[fields.py rule field refs]
+    D[diff.py impact report]
   end
 
   subgraph outputs [Outputs]
@@ -50,75 +50,75 @@ flowchart LR
 
 ## Components
 
-| Module | Responsibility |
-|--------|----------------|
-| `cli.py` | Typer surface: `diff`, `fields`, `init` |
+| Module | Role |
+|--------|------|
+| `cli.py` | Commands: `diff`, `fields`, `init` |
 | `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory) |
-| `fields.py` | Walk Sigma `detection` selections; strip `|modifiers`; collect field paths |
-| `diff.py` | For each rule: referenced ∩ (before − after) → IMPACTED |
-| samples | `fixtures/before`, `fixtures/after`, `rules/` — reproducible demo |
-| CI | `.github/workflows/detdrift.yml` — pytest + intentional exit-code checks |
+| `fields.py` | Walk Sigma `detection` selections, strip `|modifiers`, collect field paths |
+| `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after |
+| samples | `fixtures/before`, `fixtures/after`, `rules/` for the demo |
+| CI | `.github/workflows/detdrift.yml` runs pytest and exit-code checks |
 
 ## Data flow (`detdrift diff`)
 
-1. Load **before** schema = union of event field paths.
-2. Load **after** schema the same way.
-3. Discover Sigma YAML under `--rules`.
-4. For each rule, extract referenced fields from `detection` (ignore `condition` semantics in v0.1).
-5. Mark IMPACTED when any referenced field is present in before and absent in after.
-6. Emit report; exit `1` if any IMPACTED, `2` on I/O/parse errors, else `0`.
+1. Load the before schema as the union of event field paths.
+2. Load the after schema the same way.
+3. Find Sigma YAML under `--rules`.
+4. For each rule, extract referenced fields from `detection` (v0.1 ignores `condition` logic).
+5. Mark IMPACTED when any referenced field is present before and absent after.
+6. Print the report. Exit `1` if any rule is IMPACTED, `2` on I/O or parse errors, otherwise `0`.
 
 ## Schema model (v0.1)
 
 - Top-level keys on each event object.
 - One level of dotted paths for nested objects (`parent.image`).
 - Arrays do not expand element schemas in v0.1.
-- Field sets are case-sensitive (Sigma field names as written).
+- Field names are case-sensitive, as written in Sigma.
 
 ## Rule model (v0.1)
 
 - Single-document Sigma YAML.
-- Selection keys like `CommandLine|contains` → field `CommandLine`.
-- Keyword-only detections (no field keys) produce no field refs and cannot be IMPACTED by schema loss — documented limitation.
+- Selection keys like `CommandLine|contains` map to field `CommandLine`.
+- Keyword-only detections (no field keys) produce no references, so they cannot be IMPACTED by a missing field. That is a known limit.
 - No evaluation of `condition`, timeframes, or correlations.
 
 ## Trust and security
 
-- Treat fixtures and rule files as **untrusted input** (YAML parse only; no code execution).
-- No subprocess calls to external scanners in the core path.
-- No credentials, no cloud APIs in v0.1.
-- Optional future AI propose-patch (Phase 2) must be opt-in and never auto-apply.
+- Treat fixtures and rule files as untrusted input. Parse YAML only. Do not execute code from them.
+- The core path does not call external scanners.
+- v0.1 uses no credentials and no cloud APIs.
+- A later optional propose-patch helper (Phase 2) must stay optional and must never auto-apply changes.
 
-## Extension points (intentional)
+## Possible extensions later
 
-| Hook | Future use | Guardrail |
-|------|------------|-----------|
-| Schema providers | SIEM export, OCSF parquet sample, pipeline dry-run output | Still offline snapshots; no live SIEM required for core |
-| Rule providers | KQL / SPL / custom YAML | Same blast-radius contract |
-| Reporters | SARIF, GitHub Check annotations | Exit codes stay stable |
-| Propose-patch | LLM drafts mapping or rule fixes | Human merge only |
+| Hook | Possible use | Guardrail |
+|------|--------------|-----------|
+| Schema providers | SIEM export, parquet sample, pipeline dry-run output | Still offline snapshots. Core does not require a live SIEM. |
+| Rule providers | KQL, SPL, or custom YAML | Same impact report contract |
+| Reporters | SARIF, GitHub Check annotations | Keep exit codes stable |
+| Propose-patch | Draft mapping or rule fixes for review | Human merge only |
 
-## Non-goals (architecture freeze)
+## Non-goals
 
 - Full Sigma compilation or backends
-- Live federation across SIEM / lake / SaaS
+- Live search across SIEM, lake, or SaaS
 - Owning ingest, routing, or storage
-- Replacing detection-as-code test frameworks that evaluate match/no-match on fixtures
+- Replacing tools that evaluate match / no-match on fixtures
 
-Those may appear as **sibling** tools; they do not expand this binary's core path without a major version and roadmap change.
+Those can live as other projects. They should not expand this tool's core path without a major version and a roadmap change.
 
-## Package layout
+## Layout
 
 ```text
-src/detdrift/     library + CLI
+src/detdrift/     library and CLI
 rules/            demo Sigma
 fixtures/         before/after NDJSON
 tests/            unit tests
 examples/         demo.sh
-.github/workflows CI contract
+.github/workflows CI
 ```
 
 ## Versioning
 
-- **0.x** — MVP and hardening; CLI flags may evolve with changelog notes.
-- **1.0** — stable exit codes, schema/field extraction contract, documented Sigma subset.
+- **0.x:** early releases. CLI flags may change; note them in the changelog.
+- **1.0:** stable exit codes, stable schema/field extraction contract, documented Sigma subset.

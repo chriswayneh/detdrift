@@ -82,12 +82,12 @@ def test_keyword_only_no_fields():
         "keywords": ["mimikatz", "sekurlsa"],
         "condition": "keywords",
     }
-    # keywords list of scalars under a non-field-map-looking structure —
+    # keywords list of scalars under a non-field-map-looking structure -
     # "keywords" with scalar list gets treated as a field name by the walker.
     # For true keyword searches Sigma uses a list under a named group; our
     # extractor will collect "keywords" as a field. Document that limitation
     # by asserting current behavior OR skip collecting known keyword keys.
     # Prefer: keyword groups with only string lists and no field maps → empty-ish.
     fields = extract_fields_from_detection(detection)
-    # Accept either empty or {"keywords"} — refine: strip known non-fields
+    # Accept either empty or {"keywords"} - refine: strip known non-fields
     assert "mimikatz" not in fields

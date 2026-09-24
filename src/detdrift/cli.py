@@ -1,4 +1,4 @@
-"""detdrift CLI — schema-diff → detection blast radius."""
+"""detdrift CLI: schema change vs Sigma field references."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from detdrift.fields import extract_fields_from_file
 
 app = typer.Typer(
     name="detdrift",
-    help="Schema-diff → detection blast radius: which Sigma rules go silent when fields change?",
+    help="Report which Sigma rules lose fields after a schema change.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -53,7 +53,7 @@ def main(
         is_eager=True,
     ),
 ) -> None:
-    """Schema-diff → detection blast radius."""
+    """Compare before/after schemas to Sigma rules."""
 
 
 @app.command("diff")
@@ -188,7 +188,7 @@ def init_cmd(
     typer.echo(
         f"  detdrift diff --before {before_dir} --after {after_dir} --rules {rules_dir}"
     )
-    typer.echo("  # expect exit 1 — CommandLine gone, whoami rule IMPACTED")
+    typer.echo("  # expect exit 1: CommandLine gone, whoami rule IMPACTED")
 
 
 if __name__ == "__main__":

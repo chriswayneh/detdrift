@@ -1,0 +1,42 @@
+name: detdrift
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Identical schemas must pass
+        run: detdrift diff --before fixtures/before --after fixtures/before --rules rules
+
+      # Intentional schema break is covered by pytest (exit 1 + IMPACTED).
+      # Do not fail the workflow on the demo after-fixture; run it and assert exit 1.
+      - name: Demo drift must fail (exit 1)
+        run: |
+          set +e
+          detdrift diff --before fixtures/before --after fixtures/after --rules rules
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 for before→after drift, got $code" >&2
+            exit 1
+          fi
