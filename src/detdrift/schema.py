@@ -57,6 +57,63 @@ def _schema_from_ndjson_file(path: Path, *, nested: bool = True) -> tuple[set[st
     return schema, count
 
 
+
+def _fields_from_mapping(obj: dict[str, Any], *, nested: bool = True) -> set[str]:
+    """Treat a JSON object as a field map (keys are fields).
+
+    If the object has a ``fields`` list of strings, use that list instead.
+    Nested dict values still contribute one-level dotted paths when nested=True.
+    """
+    if "fields" in obj and isinstance(obj["fields"], list) and all(
+        isinstance(x, str) for x in obj["fields"]
+    ):
+        return {str(x) for x in obj["fields"]}
+    return _paths_from_event(obj, nested=nested)
+
+
+def _schema_from_json_document(path: Path, *, nested: bool = True) -> tuple[set[str], int] | None:
+    """If the whole file is one JSON value, return (fields, event_count); else None.
+
+    Supports:
+    - object: keys are fields (or ``{"fields": ["a", "b"]}``)
+    - array of objects: union of event field paths
+    """
+    raw = path.read_text(encoding="utf-8-sig").strip()
+    if not raw:
+        return None
+    try:
+        doc = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(doc, dict):
+        return _fields_from_mapping(doc, nested=nested), 1
+    if isinstance(doc, list):
+        schema: set[str] = set()
+        count = 0
+        for item in doc:
+            if isinstance(item, dict):
+                schema |= _paths_from_event(item, nested=nested)
+                count += 1
+        return schema, count
+    return None
+
+
+def _schema_from_file(path: Path, *, nested: bool = True) -> tuple[set[str], int]:
+    """Load fields from one sample file (JSON document or NDJSON)."""
+    # Prefer a whole-file JSON document when the file parses as one value.
+    # This accepts flat schema objects without requiring NDJSON line format.
+    whole = _schema_from_json_document(path, nested=nested)
+    if whole is not None:
+        # If it looked like a single object but the file is clearly multi-line
+        # NDJSON (multiple non-empty lines that are each JSON), prefer NDJSON.
+        # Heuristic: more than one non-empty line AND first line alone is valid JSON object
+        # AND whole-file parse succeeded as dict ? still use whole-file for pretty JSON.
+        # Only fall back to NDJSON when whole-file parse fails (handled above) OR
+        # when the document is a string/number (None above).
+        return whole
+    return _schema_from_ndjson_file(path, nested=nested)
+
+
 def schema_from_ndjson(path: Path | str, *, nested: bool = True) -> set[str]:
     """Build a field set from an NDJSON/JSONL file (one JSON object per line).
 
@@ -70,12 +127,13 @@ def schema_from_ndjson(path: Path | str, *, nested: bool = True) -> set[str]:
 def load_schema_sample(path: Path | str, *, nested: bool = True) -> SchemaSample:
     """Load a schema sample with event/file counts for warning checks.
 
-    - File: parse as NDJSON
+    - File: JSON object (keys = fields, or ``{"fields": [...]}``), JSON array of
+      events, or NDJSON/JSONL (one object per line)
     - Directory: union schemas from all ``*.jsonl`` / ``*.ndjson`` / ``*.json`` files
     """
     path = Path(path)
     if path.is_file():
-        fields, events = _schema_from_ndjson_file(path, nested=nested)
+        fields, events = _schema_from_file(path, nested=nested)
         return SchemaSample(
             fields=fields,
             event_count=events,
@@ -98,7 +156,7 @@ def load_schema_sample(path: Path | str, *, nested: bool = True) -> SchemaSample
             raise FileNotFoundError(f"No NDJSON/JSON sample files found in {path}")
         total_events = 0
         for f in unique:
-            fields, events = _schema_from_ndjson_file(f, nested=nested)
+            fields, events = _schema_from_file(f, nested=nested)
             schema |= fields
             total_events += events
         return SchemaSample(

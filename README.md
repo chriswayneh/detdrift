@@ -73,7 +73,7 @@ Useful `diff` flags:
 - `--ignore GLOB` to skip extra rule paths (repeatable). Default ignored directory names include `.git`, `.github`, `vendor`, and `tests`
 - Empty or clearly incomplete **after** samples produce a WARNING (stderr + report). An empty file is not the same as "nothing removed".
 
-`BEFORE` and `AFTER` can be one NDJSON/JSONL file or a directory of them. Rules under `--rules` are found recursively (`*.yml` / `*.yaml`).
+`BEFORE` and `AFTER` can be one NDJSON/JSONL file, a flat JSON field map (`{"Image": true, ...}` or `{"fields": [...]}`), a JSON array of events, or a directory of those. See [importers](docs/importers.md). Rules under `--rules` are found recursively (`*.yml` / `*.yaml`).
 
 ### Fail-on example
 
