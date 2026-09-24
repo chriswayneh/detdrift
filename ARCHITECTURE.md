@@ -30,11 +30,13 @@ flowchart LR
     S[schema.py field set union]
     F[fields.py rule field refs]
     D[diff.py impact report]
+    P[propose.py notes / patch]
   end
 
   subgraph outputs [Outputs]
     H[Human report]
     J[JSON report]
+    N[Mapping notes / draft patch]
     E[Exit code 0/1/2]
   end
 
@@ -46,16 +48,19 @@ flowchart LR
   D --> H
   D --> J
   D --> E
+  D --> P
+  P --> N
 ```
 
 ## Components
 
 | Module | Role |
 |--------|------|
-| `cli.py` | Commands: `diff`, `fields`, `init` |
+| `cli.py` | Commands: `diff`, `fields`, `propose-patch`, `init` |
 | `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory) |
 | `fields.py` | Walk Sigma `detection` selections, strip `|modifiers`, collect field paths |
 | `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after; recursive discovery; fail-on helpers |
+| `propose.py` | Heuristic rename suggestions; mapping notes or draft unified diffs (stdout/`--output` only) |
 | samples | `fixtures/before`, `fixtures/after`, `rules/` for the demo |
 | CI | `.github/workflows/detdrift.yml` runs pytest and exit-code checks |
 | Action | Root `action.yml` composite action for external repos |
@@ -89,7 +94,7 @@ flowchart LR
 - Treat fixtures and rule files as untrusted input. Parse YAML only. Do not execute code from them.
 - The core path does not call external scanners.
 - v0.1 uses no credentials and no cloud APIs.
-- A later optional propose-patch helper (Phase 2) must stay optional and must never auto-apply changes.
+- Phase 2 `propose-patch` is optional, offline, and never auto-applies or auto-commits. Drafts go to stdout / `--output` only.
 
 ## Possible extensions later
 
@@ -112,10 +117,11 @@ Those can live as other projects. They should not expand this tool's core path w
 ## Layout
 
 ```text
-src/detdrift/     library and CLI
+src/detdrift/     library and CLI (includes propose.py)
 rules/            demo Sigma
 fixtures/         before/after NDJSON
 tests/            unit tests
+skills/detdrift/  agent skill (SKILL.md)
 examples/         demo.sh
 docs/             JSON report contract and CI copies
 action.yml        reusable composite GitHub Action

@@ -8,7 +8,7 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 |-------|------|---------|--------|
 | **0** | Foundation | Public repo, working CLI, demo fixtures, CI, docs | Shipped |
 | **1** | Harden | Better field extraction; reusable Action | Shipped (v0.2) |
-| **2** | Assist | Optional propose-patch helper and agent skill | Later |
+| **2** | Assist | Optional propose-patch helper and agent skill | Shipped (v0.3) |
 | **3** | Connect | Import common export formats; SARIF / PR notes | Later |
 | **4** | Broaden | Optional support for other rule languages | Optional |
 
@@ -47,11 +47,15 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 **Goal:** Optional helpers that draft fixes you still review yourself.
 
-- `detdrift propose-patch` (optional): draft mapping notes or fixture/rule patches when fields disappear
-- A coding-agent skill that wraps `diff`, `fields`, and propose
-- No auto-commit. Output is a patch or PR body for a human
+- [x] `detdrift propose-patch` with `--format notes` (default) and `--format patch`
+- [x] Heuristic renames when obvious (e.g. `CommandLine` removed + `cmd` added); otherwise mapping notes only
+- [x] No in-place rule edits by default; stdout / `--output` only; no auto-commit; offline
+- [x] Coding-agent skill at `skills/detdrift/SKILL.md` wrapping `diff`, `fields`, and propose
+- [x] Tests for notes, patch, and non-modification of rules
 
 **Done when:** the propose flow is documented, and `diff` / `fields` still work offline with no API keys.
+
+**Shipped:** v0.3.0
 
 ## Phase 3: Connect (v0.4)
 
@@ -95,4 +99,4 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 1. Finish Phase 0 polish (docs voice, workflow in `.github/workflows`).
 2. Run Phase 1 against a real rules folder or a public Sigma pack. (Done: see docs/dogfood.md)
-3. Add Phase 2 helpers only after people are actually running `diff` in CI.
+3. Phase 2 Assist shipped (v0.3.0): propose-patch + skill. Keep offline; no auto-apply.

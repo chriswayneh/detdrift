@@ -12,6 +12,7 @@ import typer
 from detdrift import __version__
 from detdrift.diff import diff_rules, format_report_human
 from detdrift.fields import extract_fields_from_file
+from detdrift.propose import format_propose, propose_from_paths
 
 app = typer.Typer(
     name="detdrift",
@@ -192,6 +193,54 @@ _SAMPLE_AFTER = '''{"Image": "C:\\\\Windows\\\\System32\\\\whoami.exe", "cmd": "
 {"Image": "C:\\\\Windows\\\\System32\\\\cmd.exe", "cmd": "cmd.exe /c whoami", "User": "CORP\\\\bob"}
 {"Image": "C:\\\\Windows\\\\System32\\\\notepad.exe", "cmd": "notepad.exe", "User": "CORP\\\\alice"}
 '''
+
+
+@app.command("propose-patch")
+def propose_patch_cmd(
+    before: Path = typer.Option(..., "--before", "-b", help="Before NDJSON file or directory"),
+    after: Path = typer.Option(..., "--after", "-a", help="After NDJSON file or directory"),
+    rules: Path = typer.Option(..., "--rules", "-r", help="Directory of Sigma YAML rules"),
+    fmt: str = typer.Option(
+        "notes",
+        "--format",
+        "-f",
+        help="Output format: notes (default mapping notes) or patch (unified diff draft)",
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Write draft to file (in addition to stdout)"
+    ),
+    ignore: Optional[list[str]] = typer.Option(
+        None,
+        "--ignore",
+        help="Extra fnmatch glob to skip under --rules (repeatable).",
+    ),
+) -> None:
+    """Draft mapping notes or a rule patch for IMPACTED fields (review only; no in-place edits)."""
+    fmt_norm = (fmt or "notes").strip().lower()
+    if fmt_norm not in {"notes", "patch"}:
+        typer.secho(
+            f"Unknown --format {fmt!r}; use notes or patch",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(2)
+
+    try:
+        result = propose_from_paths(before, after, rules, ignore=ignore)
+        text = format_propose(result, rules, fmt_norm)
+    except FileNotFoundError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+    except ValueError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+
+    out_text = text if text.endswith("\n") else text + "\n"
+    typer.echo(out_text, nl=False)
+    if output is not None:
+        output.write_text(out_text, encoding="utf-8")
+
+    raise typer.Exit(0)
 
 
 @app.command("init")

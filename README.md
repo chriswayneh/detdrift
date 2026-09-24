@@ -61,6 +61,7 @@ Python 3.12 or newer. PyPI install (`pip install detdrift`) comes later.
 | `detdrift diff -b BEFORE -a AFTER -r RULES` | Main check. Exit 1 if any rule is impacted (or if a fail-on filter matches). |
 | `detdrift fields RULE.yml` | List field names pulled from one rule. |
 | `detdrift init [DIR]` | Write sample rules and before/after fixtures. |
+| `detdrift propose-patch -b BEFORE -a AFTER -r RULES` | Draft mapping notes (default) or a unified diff (`--format patch`). Review only; no in-place edits. |
 
 Useful `diff` flags:
 
@@ -85,6 +86,23 @@ detdrift diff -b fixtures/before -a fixtures/after -r rules --fail-on-tag attack
 ```
 
 When both filters are set, a rule must match severity and tag.
+
+
+## Propose a fix (Phase 2)
+
+When `diff` reports IMPACTED rules, draft mapping notes or a patch for human review:
+
+```bash
+# mapping notes (default): heuristic CommandLine -> cmd when obvious
+detdrift propose-patch --before fixtures/before --after fixtures/after --rules rules
+
+# unified diff draft (still does not touch rule files)
+detdrift propose-patch --before fixtures/before --after fixtures/after --rules rules --format patch -o draft.patch
+```
+
+Heuristics suggest a rename only when the mapping is obvious (known aliases or a single clear added field). Otherwise you get notes listing unclear removals. Nothing is written into the rules tree unless you apply a draft yourself. No auto-commit. Offline; no API keys.
+
+Agent skill: [`skills/detdrift/SKILL.md`](skills/detdrift/SKILL.md).
 
 ## How it works
 
@@ -131,7 +149,7 @@ Or install and run the CLI yourself:
 
 ## What this is and is not
 
-**Is:** a check for Sigma field references against a schema change. A CI gate for mapping edits. A small helper (`fields`) for seeing what a rule touches.
+**Is:** a check for Sigma field references against a schema change. A CI gate for mapping edits. Small helpers (`fields`, `propose-patch`) for seeing what a rule touches and drafting mapping notes.
 
 **Is not:** a Sigma matcher, correlator, or SIEM. It does not evaluate `condition` blocks. A rule that is not IMPACTED still might not fire for other reasons. This only says the fields it names are still present.
 
