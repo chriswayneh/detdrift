@@ -91,7 +91,7 @@ Exit codes (CI-friendly):
 
 ## GitHub Action / CI
 
-Workflow in `.github/workflows/detdrift.yml` runs pytest and asserts:
+CI workflow definition lives at [`docs/ci/detdrift.yml`](docs/ci/detdrift.yml) (copy into `.github/workflows/` in your fork or this repo once your GitHub token has the `workflow` scope). It runs pytest and asserts:
 
 - before vs before → exit 0
 - before vs after (demo rename) → exit 1

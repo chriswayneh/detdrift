@@ -6,7 +6,7 @@ Phased plan for `detdrift`. Each phase ships something people can run. Later pha
 
 | Phase | Name | Outcome | Status |
 |-------|------|---------|--------|
-| **0** | Foundation | Public repo, working CLI, demo fixtures, CI, docs | **Now** |
+| **0** | Foundation | Public repo, working CLI, demo fixtures, CI, docs | **Shipped** |
 | **1** | Harden | Real-world Sigma/field extraction; better CI packaging | Next |
 | **2** | Assist | Opt-in AI propose-patch + coding-agent skill | Later |
 | **3** | Connect | Snapshot importers (exports only) + SARIF/PR annotations | Later |
@@ -25,8 +25,8 @@ Phased plan for `detdrift`. Each phase ships something people can run. Later pha
 - [x] pytest suite
 - [x] GitHub Actions workflow
 - [x] README + ARCHITECTURE + ROADMAP
-- [ ] Public GitHub repository `chriswayneh/detdrift`
-- [ ] First tagged release `v0.1.0`
+- [x] Public GitHub repository `chriswayneh/detdrift`
+- [x] First tagged release `v0.1.0`
 
 **Exit criteria:** Repo public; `pip install -e .` + demo script green/red as documented.
 
