@@ -55,6 +55,13 @@ def test_spl_stats_by():
     assert extract_fields_from_spl(text) == {"AccountName", "DeviceName"}
 
 
+def test_spl_rex_named_group_not_a_field():
+    text = r'| rex field=ProcessCommandLine "whoami\\s+(?<whoami_args>.*)"'
+    fields = extract_fields_from_spl(text)
+    assert "ProcessCommandLine" in fields
+    assert "whoami_args" not in fields
+
+
 def test_spl_rex_field():
     text = r'| rex field=ProcessCommandLine "whoami\s+(?<args>.*)"'
     fields = extract_fields_from_spl(text)

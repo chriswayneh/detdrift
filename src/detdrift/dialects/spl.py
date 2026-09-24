@@ -14,9 +14,10 @@ from typing import Any
 # Dotted field path: Image, Process.CommandLine, winlog.event_data.CommandLine
 _FIELD = r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*"
 
-# Field=value / Field!= / Field>/Field< (search and where comparisons)
+# Field=value / Field!= (search and where). Avoid bare <> so rex
+# named groups like (?<whoami_args>...) are not treated as fields.
 _EQ_FIELD = re.compile(
-    rf"(?<![A-Za-z0-9_.])({_FIELD})\s*(?:=|!=|<=|>=|<|>)"
+    rf"(?<![A-Za-z0-9_.])({_FIELD})\s*(?:=|!=)"
 )
 
 # stats / chart / timechart ... by Field1, Field2
