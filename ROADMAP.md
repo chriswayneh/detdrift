@@ -41,6 +41,8 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 **Done when:** it runs cleanly on a public Sigma sample set, and another repo can call the Action.
 
+**Dogfood (v0.2.0 / v0.2.1):** Sparse SigmaHQ rules/windows/process_creation (~1185 rules), synthetic CommandLine to cmd. Result: 914 IMPACTED / 271 SAFE. UTF-8 BOM from PowerShell handled as of v0.2.1. See [docs/dogfood.md](docs/dogfood.md).
+
 ## Phase 2: Assist (v0.3)
 
 **Goal:** Optional helpers that draft fixes you still review yourself.
@@ -92,5 +94,5 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 ## Suggested order
 
 1. Finish Phase 0 polish (docs voice, workflow in `.github/workflows`).
-2. Run Phase 1 against a real rules folder or a public Sigma pack.
+2. Run Phase 1 against a real rules folder or a public Sigma pack. (Done: see docs/dogfood.md)
 3. Add Phase 2 helpers only after people are actually running `diff` in CI.

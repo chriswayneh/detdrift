@@ -147,6 +147,7 @@ Current limits:
 - [Architecture](ARCHITECTURE.md)
 - [Roadmap](ROADMAP.md) (phases 0 to 4)
 - [JSON report schema](docs/json-report.md)
+- [Dogfood notes](docs/dogfood.md) (SigmaHQ process_creation pack)
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)
 

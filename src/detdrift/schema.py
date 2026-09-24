@@ -28,10 +28,14 @@ def schema_from_events(events: list[dict[str, Any]], *, nested: bool = True) -> 
 
 
 def schema_from_ndjson(path: Path | str, *, nested: bool = True) -> set[str]:
-    """Build a field set from an NDJSON/JSONL file (one JSON object per line)."""
+    """Build a field set from an NDJSON/JSONL file (one JSON object per line).
+
+    Uses ``utf-8-sig`` so files with a UTF-8 BOM (common from Windows editors
+    and PowerShell ``Set-Content -Encoding utf8``) still parse.
+    """
     path = Path(path)
     schema: set[str] = set()
-    with path.open(encoding="utf-8") as fh:
+    with path.open(encoding="utf-8-sig") as fh:
         for lineno, line in enumerate(fh, start=1):
             line = line.strip()
             if not line:
