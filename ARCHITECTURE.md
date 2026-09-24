@@ -28,7 +28,7 @@ flowchart LR
 
   subgraph core [detdrift core]
     S[schema.py field set union]
-    F[fields.py rule field refs]
+    F[fields.py / dialects field refs]
     D[diff.py impact report]
     P[propose.py notes / patch]
   end
@@ -59,6 +59,7 @@ flowchart LR
 | `cli.py` | Commands: `diff`, `fields`, `propose-patch`, `init` (`diff --format human|json|sarif`) |
 | `schema.py` | Build a field-path set from NDJSON/JSONL (file or directory); sample stats + empty/incomplete warnings |
 | `fields.py` | Walk Sigma `detection` selections, strip `|modifiers`, collect field paths |
+| `dialects/` | Pluggable extractors: Sigma (default) + simple offline KQL (`where` / `project` / `by`) |
 | `diff.py` | Mark IMPACTED when a referenced field is in before and missing from after; recursive discovery; fail-on helpers |
 | `propose.py` | Heuristic rename suggestions; mapping notes or draft unified diffs (stdout/`--output` only) |
 | `sarif.py` | SARIF 2.1.0 export from DiffReport for CI / PR annotations |
@@ -90,6 +91,15 @@ flowchart LR
 - Keyword-only detections (no field keys) produce no references, so they cannot be IMPACTED by a missing field. That is a known limit.
 - No evaluation of `condition`, timeframes, or correlations.
 
+
+## Dialects (v0.5)
+
+- **sigma** (default): YAML rules; discovery `*.yml` / `*.yaml`.
+- **kql**: text queries; discovery `*.kql`. Simple field refs only (`where Field op`, `project`, `summarize … by`, `sort by`).
+- **auto**: per-file by extension (`.kql` → KQL, otherwise Sigma).
+
+CLI: `detdrift diff --dialect …`, `detdrift fields --dialect …` (fields defaults to `auto`).
+
 ## Trust and security
 
 - Treat fixtures and rule files as untrusted input. Parse YAML only. Do not execute code from them.
@@ -102,7 +112,7 @@ flowchart LR
 | Hook | Possible use | Guardrail |
 |------|--------------|-----------|
 | Schema providers | SIEM export, parquet sample, pipeline dry-run output | Still offline snapshots. Core does not require a live SIEM. |
-| Rule providers | KQL, SPL, or custom YAML | Same impact report contract |
+| Rule providers | KQL (shipped v0.5), SPL, or custom YAML | Same impact report contract; not a query engine |
 | Reporters | SARIF, GitHub Check annotations | Keep exit codes stable |
 | Propose-patch | Draft mapping or rule fixes for review | Human merge only |
 
@@ -118,7 +128,7 @@ Those can live as other projects. They should not expand this tool's core path w
 ## Layout
 
 ```text
-src/detdrift/     library and CLI (includes propose.py)
+src/detdrift/     library and CLI (includes propose.py, dialects/)
 rules/            demo Sigma
 fixtures/         before/after NDJSON
 tests/            unit tests

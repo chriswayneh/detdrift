@@ -1,0 +1,2 @@
+{"FileName": "whoami.exe", "ProcessCommandLine": "whoami /all", "AccountName": "CORP\\alice", "DeviceName": "ws1", "Timestamp": "2026-01-01T00:00:00Z"}
+{"FileName": "cmd.exe", "ProcessCommandLine": "cmd.exe /c whoami", "AccountName": "CORP\\bob", "DeviceName": "ws2", "Timestamp": "2026-01-01T00:01:00Z"}

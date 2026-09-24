@@ -1,0 +1,5 @@
+// Whoami via process command line (KQL sample for detdrift)
+DeviceProcessEvents
+| where FileName =~ "whoami.exe" or ProcessCommandLine contains "whoami"
+| project Timestamp, DeviceName, FileName, ProcessCommandLine, AccountName
+| sort by Timestamp

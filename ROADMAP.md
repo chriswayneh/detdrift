@@ -10,7 +10,7 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 | **1** | Harden | Better field extraction; reusable Action | Shipped (v0.2) |
 | **2** | Assist | Optional propose-patch helper and agent skill | Shipped (v0.3) |
 | **3** | Connect | Import common export formats; SARIF / PR notes | Shipped (v0.4) |
-| **4** | Broaden | Optional support for other rule languages | Optional |
+| **4** | Broaden | Optional support for other rule languages | Started (v0.5) |
 
 ## Phase 0: Foundation (v0.1)
 
@@ -74,9 +74,12 @@ Plan for detdrift by phase. Each phase should ship something you can run. Later 
 
 **Goal:** Same question for more rule languages, only if earlier phases stick.
 
-- Pluggable field extractors (simple KQL or SPL field refs)
-- Stable 1.0 contract for schema and report JSON
-- Publish on PyPI: `pip install detdrift`
+- [x] Pluggable field extractors — simple **KQL** field refs (v0.5.0; `--dialect sigma|kql|auto`)
+- [ ] Optional SPL field refs (same CLI contract; not started)
+- [ ] Stable 1.0 contract for schema and report JSON
+- [ ] Publish on PyPI: `pip install detdrift`
+
+**Shipped so far:** v0.5.0 adds offline KQL extraction (`where` / `project` / `summarize by` / `sort by`). Not a query engine. Sigma remains the default. See README "Other dialects".
 
 **Done when:** a second rule dialect works behind the same CLI, and the version is 1.0.
 

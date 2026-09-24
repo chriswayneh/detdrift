@@ -1,4 +1,4 @@
-"""detdrift CLI: schema change vs Sigma field references."""
+"""detdrift CLI: schema change vs detection field references."""
 
 from __future__ import annotations
 
@@ -10,14 +10,14 @@ from typing import Optional
 import typer
 
 from detdrift import __version__
+from detdrift.dialects import extract_fields_from_file, normalize_dialect
 from detdrift.diff import diff_rules, format_report_human
-from detdrift.fields import extract_fields_from_file
 from detdrift.propose import format_propose, propose_from_paths
 from detdrift.sarif import format_sarif
 
 app = typer.Typer(
     name="detdrift",
-    help="Report which Sigma rules lose fields after a schema change.",
+    help="Report which detection rules lose fields after a schema change (Sigma default; optional KQL).",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -106,10 +106,24 @@ def diff_cmd(
             "Example: --ignore '*_test.yml' --ignore 'fixtures/**'"
         ),
     ),
+    dialect: str = typer.Option(
+        "sigma",
+        "--dialect",
+        "-d",
+        help=(
+            "Rule dialect: sigma (default, *.yml/*.yaml), kql (*.kql), "
+            "or auto (pick per file by extension)."
+        ),
+    ),
 ) -> None:
-    """Compare before/after schemas and report Sigma rules that would go silent."""
+    """Compare before/after schemas and report rules that would go silent."""
     try:
-        report = diff_rules(before, after, rules, ignore=ignore)
+        dialect_norm = normalize_dialect(dialect)
+    except ValueError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+    try:
+        report = diff_rules(before, after, rules, ignore=ignore, dialect=dialect_norm)
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
@@ -173,11 +187,25 @@ def diff_cmd(
 
 @app.command("fields")
 def fields_cmd(
-    rule: Path = typer.Argument(..., help="Path to a Sigma YAML rule"),
+    rule: Path = typer.Argument(..., help="Path to a rule file (Sigma YAML or .kql)"),
+    dialect: str = typer.Option(
+        "auto",
+        "--dialect",
+        "-d",
+        help=(
+            "Rule dialect: auto (default; by extension), sigma, or kql. "
+            ".yml/.yaml -> sigma, .kql -> kql."
+        ),
+    ),
 ) -> None:
     """List field references extracted from one rule (debug)."""
     try:
-        fields = extract_fields_from_file(rule)
+        dialect_norm = normalize_dialect(dialect)
+    except ValueError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+    try:
+        fields = extract_fields_from_file(rule, dialect=dialect_norm)
     except (OSError, ValueError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc

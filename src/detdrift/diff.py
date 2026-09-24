@@ -7,7 +7,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-from detdrift.fields import extract_fields_from_rule, load_rule
+from detdrift.dialects import (
+    extract_fields_from_file,
+    load_rule_meta,
+    normalize_dialect,
+    rule_globs_for_dialect,
+)
 from detdrift.schema import load_schema_sample, sample_warnings
 
 # JSON report contract version (see docs/json-report.md).
@@ -174,14 +179,14 @@ def discover_rules(
     *,
     ignore: Iterable[str] | None = None,
     ignore_dirs: Iterable[str] | None = None,
+    dialect: str | None = None,
 ) -> list[Path]:
-    """Recursively find Sigma YAML rule files under a directory.
+    """Recursively find rule files under a directory.
 
-    Skips directories named in ``ignore_dirs`` (defaults to
-    ``DEFAULT_IGNORE_DIRS``: ``.git``, ``.github``, ``vendor``, ``tests``,
-    and similar). Extra ``ignore`` entries are treated as fnmatch globs
-    matched against the relative path or basename (for example
-    ``*_test.yml`` or ``fixtures/**``).
+    Default dialect is Sigma (``*.yml`` / ``*.yaml``). Pass ``dialect="kql"``
+    for ``*.kql``, or ``dialect="auto"`` for both. Skips directories named in
+    ``ignore_dirs`` (defaults to ``DEFAULT_IGNORE_DIRS``). Extra ``ignore``
+    entries are fnmatch globs against the relative path or basename.
     """
     root = Path(rules_dir)
     if not root.is_dir():
@@ -192,10 +197,11 @@ def discover_rules(
         skip_dirs = set(ignore_dirs)
 
     globs = [g for g in (ignore or []) if g]
+    file_patterns = rule_globs_for_dialect(dialect)
 
     seen: set[Path] = set()
     out: list[Path] = []
-    for pattern in ("**/*.yml", "**/*.yaml"):
+    for pattern in file_patterns:
         for f in sorted(root.glob(pattern)):
             if not f.is_file():
                 continue
@@ -229,13 +235,14 @@ def analyze_rule(
     after: set[str],
     *,
     relative_to: Path | None = None,
+    dialect: str | None = None,
 ) -> RuleImpact:
     """Classify a single rule as IMPACTED / SAFE / UNKNOWN."""
-    rule = load_rule(rule_path)
-    refs = extract_fields_from_rule(rule)
-    title = str(rule.get("title") or rule_path.stem)
-    level = _rule_level(rule)
-    tags = _rule_tags(rule)
+    refs = extract_fields_from_file(rule_path, dialect=dialect)
+    meta = load_rule_meta(rule_path, dialect=dialect)
+    title = str(meta.get("title") or rule_path.stem)
+    level = str(meta.get("level") or "")
+    tags = list(meta.get("tags") or [])
 
     if relative_to is not None:
         try:
@@ -257,7 +264,7 @@ def analyze_rule(
             tags=tags,
         )
 
-    # Fields the rule needs that existed before but vanished after → silence risk
+    # Fields the rule needs that existed before but vanished after -> silence risk
     missing = sorted(f for f in refs if f in before and f not in after)
     never = sorted(f for f in refs if f not in before)
     referenced = sorted(refs)
@@ -281,8 +288,14 @@ def diff_rules(
     rules_dir: Path | str,
     *,
     ignore: Iterable[str] | None = None,
+    dialect: str | None = None,
 ) -> DiffReport:
-    """Compare before/after schemas and flag rules that would go silent."""
+    """Compare before/after schemas and flag rules that would go silent.
+
+    ``dialect`` is ``sigma`` (default), ``kql``, or ``auto`` (per-file by
+    extension: ``.yml``/``.yaml`` -> Sigma, ``.kql`` -> KQL).
+    """
+    dialect = normalize_dialect(dialect)
     before_sample = load_schema_sample(before_path)
     after_sample = load_schema_sample(after_path)
     before = before_sample.fields
@@ -291,9 +304,9 @@ def diff_rules(
     warnings = sample_warnings(before_sample, after_sample)
 
     rules_root = Path(rules_dir)
-    rule_files = discover_rules(rules_root, ignore=ignore)
+    rule_files = discover_rules(rules_root, ignore=ignore, dialect=dialect)
     impacts = [
-        analyze_rule(rp, before, after, relative_to=rules_root)
+        analyze_rule(rp, before, after, relative_to=rules_root, dialect=dialect)
         for rp in rule_files
     ]
 
@@ -310,6 +323,7 @@ def diff_rules(
     )
 
 
+
 def format_report_human(
     report: DiffReport,
     *,
@@ -319,7 +333,7 @@ def format_report_human(
 ) -> str:
     """Render a human-readable impact report."""
     lines: list[str] = []
-    lines.append("detdrift: schema change vs Sigma rules")
+    lines.append("detdrift: schema change vs detection field refs")
     lines.append("=" * 48)
     lines.append(f"Rules scanned:    {report.rules_scanned}")
     lines.append(f"Before fields:    {len(report.before_fields)}")
