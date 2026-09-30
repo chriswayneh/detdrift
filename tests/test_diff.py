@@ -51,7 +51,7 @@ def test_cli_exit_codes(tmp_path):
     )
     assert bad.exit_code == 1, bad.output
     assert "CommandLine" in bad.output
-    assert "IMPACTED" in bad.output
+    assert "IMPACTED (1): rules referencing removed fields" in bad.output
 
 
 def test_fields_command():

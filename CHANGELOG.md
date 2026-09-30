@@ -4,6 +4,12 @@ All notable changes to detdrift are summarized here in plain language.
 Versions follow [SemVer](https://semver.org/). The JSON report uses a separate
 integer `schema_version` (see [docs/json-report.md](docs/json-report.md)).
 
+## Unreleased
+
+- Quick demo now uses the released install and `detdrift init`, without a clone or development dependencies.
+- Human reports describe missing field references without claiming a detection will stop firing. JSON schema and exit codes are unchanged.
+- CI checks the built wheel in a fresh environment outside the checkout on Linux and Windows.
+
 ## 1.0.0 - 2026-09-24
 
 Stable 1.0: Phase 4 dialects are in, and the report/CLI contract is frozen.

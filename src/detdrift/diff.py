@@ -353,7 +353,7 @@ def format_report_human(
     safe = report.safe
 
     if impacted:
-        lines.append(f"IMPACTED ({len(impacted)}): rules that would go quiet")
+        lines.append(f"IMPACTED ({len(impacted)}): rules referencing removed fields")
         for item in impacted:
             miss = ", ".join(item.missing_fields)
             lines.append(f"  x {item.rule}")
