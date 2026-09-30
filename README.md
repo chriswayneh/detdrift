@@ -1,66 +1,48 @@
 # detdrift
 
-If a telemetry field mapping changes, which detection rules go quiet?
+Check which detection rules reference fields missing after a telemetry change.
 
 detdrift **1.0** is a small CLI you can run locally or in CI. Give it your rules (Sigma by default; optional KQL/SPL) plus a before and after NDJSON sample. It tells you which rules still need fields that disappeared after the change. It does not run detections, and it is not a SIEM. The JSON report (`schema_version` 1) and exit codes are the stable 1.0 contract.
 
 Example: `CommandLine` gets renamed to `cmd`. A whoami rule that keys on `CommandLine` shows up as IMPACTED.
 
-## Why bother
+## What it catches
 
-Pipelines rename fields. ECS mappings shift. A vendor agent update swaps `CommandLine` for `cmd`. Your Sigma pack still deploys. Nothing fires, because the fields the rules expect are gone.
+Pipelines rename fields. ECS mappings shift. A vendor agent update swaps `CommandLine` for `cmd`. Your Sigma pack can still deploy even when fields its rules reference are missing.
 
-Most tools ask whether an event matches a rule. detdrift asks whether the rule can still see the fields it depends on.
+Run detdrift before shipping a mapping change to identify rules that need review.
 
 ## Quick demo
 
+Use an activated Python 3.12+ virtual environment with Git installed. No repository clone or development dependencies are needed. The demo writes sample files into a new directory.
+
 ```bash
-pip install -e ".[dev]"
+python -m pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.0"
+detdrift init detdrift-demo
+cd detdrift-demo
 
 # same schema on both sides: exit 0
 detdrift diff --before fixtures/before --after fixtures/before --rules rules
 
 # CommandLine renamed to cmd: exit 1
-detdrift diff --before fixtures/before --after fixtures/after --rules rules
-
-./examples/demo.sh
+detdrift diff --before fixtures/before --after fixtures/after --rules rules --json
 ```
 
-Sample output when fields drift:
+The second check intentionally exits with code **1**. It found the field rename; this is the expected demo result, not an installation error. Its JSON report includes:
 
-```
-detdrift: schema change vs Sigma rules
-================================================
-Rules scanned:    1
-Before fields:    3
-After fields:     3
-Removed fields:   CommandLine
-
-IMPACTED (1): rules that would go quiet
-  x proc_whoami.yml
-      title:   Whoami Execution
-      level:   low
-      missing: CommandLine
-      refs:    CommandLine, Image
-
-Result: FAIL (detection coverage at risk)
+```json
+{
+  "schema_version": 1,
+  "removed_fields": ["CommandLine"],
+  "rules_scanned": 1,
+  "impacted_count": 1,
+  "safe_count": 0
+}
 ```
 
-## Install
+This is an excerpt; the full report also lists each rule and its missing fields. `IMPACTED` means a referenced field was present in the before sample and absent from the after sample. It does not prove that a detection will stop firing: detdrift does not evaluate rule conditions or run queries.
 
-**From GitHub (recommended until PyPI):**
-
-```bash
-pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.0"
-```
-
-**Editable (dev):**
-
-```bash
-pip install -e ".[dev]"
-```
-
-Python 3.12 or newer. PyPI (`pip install detdrift`) is optional and not published yet.
+Install from the versioned GitHub URL above. This project has not been published to PyPI. For an editable install and tests, see [Contributing](CONTRIBUTING.md).
 
 ## Commands
 
@@ -156,12 +138,12 @@ Exit codes:
 | Code | Meaning |
 |------|---------|
 | 0 | No failing IMPACTED rules (none at all, or none matching `--fail-on-*`) |
-| 1 | At least one rule would go quiet (or matched the fail-on filter) |
+| 1 | At least one rule references a removed field and, if filters are set, matches the fail-on filters |
 | 2 | Bad paths or parse errors |
 
 ## CI
 
-The workflow file is at [`.github/workflows/detdrift.yml`](.github/workflows/detdrift.yml). It runs the tests and checks the demo exit codes.
+The workflow file is at [`.github/workflows/detdrift.yml`](.github/workflows/detdrift.yml). It runs the tests, checks demo exit codes, and verifies a built-wheel installation outside the source checkout on Linux and Windows.
 
 ### Reusable Action
 
@@ -194,7 +176,7 @@ Or install and run the CLI yourself:
 
 **Is:** a check for detection field references (Sigma default; optional KQL/SPL) against a schema change. A CI gate for mapping edits. Small helpers (`fields`, `propose-patch`) for seeing what a rule touches and drafting mapping notes.
 
-**Is not:** a Sigma/KQL/SPL matcher, correlator, or SIEM. It does not evaluate Sigma `condition` blocks or execute KQL/SPL. A rule that is not IMPACTED still might not fire for other reasons. This only says the fields it names are still present.
+**Is not:** a Sigma/KQL/SPL matcher, correlator, or SIEM. It does not evaluate Sigma `condition` blocks or execute KQL/SPL. A rule that is not IMPACTED still might not fire for other reasons. Fields absent from both samples are not counted as removed.
 
 Current limits:
 
