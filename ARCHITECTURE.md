@@ -4,7 +4,7 @@
 
 detdrift answers one question, locally or in CI:
 
-> If this telemetry schema changes, which Sigma detections go quiet?
+> Which detection rules reference fields removed by this telemetry schema change?
 
 It compares field sets before and after a change against the fields your rules name (Sigma by default; optional KQL/SPL). It is not a SIEM, not a matcher, and not a data pipeline.
 
@@ -13,7 +13,7 @@ It compares field sets before and after a change against the fields your rules n
 1. **One job.** Report which rules lose fields they depend on. Do not grow into matching, enrichment, or storage.
 2. **Offline by default.** No network calls. Only local rules and samples.
 3. **Clear exit codes.** `0` / `1` / `2` are part of the interface for CI.
-4. **Honest results.** "SAFE" only means the referenced fields still exist. It does not mean the rule will fire.
+4. **Honest results.** "SAFE" means no referenced field was removed between the supplied samples. It does not prove that all required fields exist or that the rule will fire.
 5. **Separate from other tools.** Works alongside [local-mcp-toolbox](https://github.com/chriswayneh/local-mcp-toolbox). It does not own agent runtime or SIEM ingest.
 
 ## Context
