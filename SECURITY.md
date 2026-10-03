@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Email or open a private GitHub security advisory on
+Open a private GitHub security advisory on
 [chriswayneh/detdrift](https://github.com/chriswayneh/detdrift) if you find a
 security issue. Please include steps to reproduce and the affected version.
 
