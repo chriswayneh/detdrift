@@ -148,3 +148,35 @@ def test_cli_fields_and_diff_kql():
     assert bad.exit_code == 1, bad.output
     assert "ProcessCommandLine" in bad.output
     assert "IMPACTED" in bad.output
+
+
+def test_kql_symbol_comparisons_are_field_refs():
+    """==, !=, and the inequality operators are not word characters.
+
+    A word boundary after the operator never matches the following space, so
+    those comparisons used to be ignored even though they are listed operators.
+    """
+    text = """
+    T
+    | where FileName == "whoami.exe"
+    | where EventCount >= 2 and Other <= 9
+    | where Flag != true or Name =~ "x"
+    | where Score > 0 and Floor < 3
+    | where Alias !~ "nope"
+    """
+    assert extract_fields_from_kql(text) == {
+        "FileName",
+        "EventCount",
+        "Other",
+        "Flag",
+        "Name",
+        "Score",
+        "Floor",
+        "Alias",
+    }
+
+
+def test_kql_word_operator_is_not_a_prefix():
+    assert extract_fields_from_kql('T | where Foo inside ("x")') == set()
+    assert extract_fields_from_kql('T | where Foo has_any ("a")') == {"Foo"}
+    assert extract_fields_from_kql('T | where Foo !has "a" or Bar !in ("b")') == {"Foo", "Bar"}

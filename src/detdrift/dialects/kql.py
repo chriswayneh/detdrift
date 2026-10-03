@@ -14,14 +14,17 @@ from typing import Any
 # Dotted field path: Image, Process.CommandLine, winlog.event_data.CommandLine
 _FIELD = r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*"
 
+# Symbol operators (=, <, >) are not word characters, so a trailing word
+# boundary never matches the space or value after them. Word operators still
+# need that boundary so "in" does not match the prefix of "inside".
 _COMPARISON_OPS = (
     r"(?:==|!=|=~|!~|<=|>=|<|>|"
-    r"contains|startswith|endswith|has|!has|has_any|has_all|in|!in)"
+    r"(?:contains|startswith|endswith|has_any|has_all|!has|!in|has|in)\b)"
 )
 
 # where Field op … / and Field op … / or Field op …
 _WHERE_FIELD = re.compile(
-    rf"(?i)\b(?:where|and|or)\s+({_FIELD})\s+{_COMPARISON_OPS}\b"
+    rf"(?i)\b(?:where|and|or)\s+({_FIELD})\s+{_COMPARISON_OPS}"
 )
 
 # project / project-away / project-keep / project-rename clause body
