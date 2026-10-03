@@ -23,8 +23,10 @@ _COMPARISON_OPS = (
 )
 
 # where Field op … / and Field op … / or Field op …
+# `not` and a grouping parenthesis sit between the keyword and the field
+# (`where not (FileName == "x")`). They are not part of the field name.
 _WHERE_FIELD = re.compile(
-    rf"(?i)\b(?:where|and|or)\s+({_FIELD})\s+{_COMPARISON_OPS}"
+    rf"(?i)\b(?:where|and|or)\s+(?:not\s+)?\(?\s*({_FIELD})\s+{_COMPARISON_OPS}"
 )
 
 # project / project-away / project-keep / project-rename clause body

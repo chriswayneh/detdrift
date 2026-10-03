@@ -180,3 +180,26 @@ def test_kql_word_operator_is_not_a_prefix():
     assert extract_fields_from_kql('T | where Foo inside ("x")') == set()
     assert extract_fields_from_kql('T | where Foo has_any ("a")') == {"Foo"}
     assert extract_fields_from_kql('T | where Foo !has "a" or Bar !in ("b")') == {"Foo", "Bar"}
+
+
+def test_kql_grouped_and_negated_where_fields():
+    """Grouping parentheses and `not` sit between where/and/or and the field.
+
+    Those comparisons are still field references. Missing them reports the
+    rule SAFE when a removed field is only named inside the group.
+    """
+    text = """
+    T
+    | where (FileName == "whoami.exe")
+    | where not (ProcessCommandLine contains "whoami")
+    | where not Flag != true and (Score >= 1)
+    | where (Alias =~ "x") or not (Other <= 9)
+    """
+    assert extract_fields_from_kql(text) == {
+        "FileName",
+        "ProcessCommandLine",
+        "Flag",
+        "Score",
+        "Alias",
+        "Other",
+    }
