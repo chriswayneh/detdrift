@@ -80,7 +80,27 @@ def main() -> None:
         assert drift["impacts"][0]["missing_fields"] == ["CommandLine"], drift
         diff("missing-sample", 2)
 
-    print("Installed-package check passed: entry points, init, JSON, exit codes 0/1/2.")
+        # The patch release must ship the KQL fixes, not merely pass tests
+        # against source-tree imports.
+        kql_rules = demo / "kql-rules"
+        kql_rules.mkdir()
+        query = kql_rules / "removed.kql"
+        for clause in (
+            'CommandLine == "whoami"',
+            '(CommandLine == "whoami")',
+            'not(CommandLine == "whoami")',
+        ):
+            query.write_text(f"ProcessEvents | where {clause}\n", encoding="utf-8")
+            report = json.loads(run(
+                cli, "diff", "--before", "fixtures/before",
+                "--after", "fixtures/after", "--rules", "kql-rules",
+                "--dialect", "kql", "--json", expected=1, cwd=demo,
+            ))
+            assert report["impacted_count"] == 1, (clause, report)
+            assert report["safe_count"] == 0, (clause, report)
+            assert report["impacts"][0]["missing_fields"] == ["CommandLine"], report
+
+    print("Installed-package check passed: entry points, init, JSON, exit codes 0/1/2, KQL regressions.")
 
 
 if __name__ == "__main__":

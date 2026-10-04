@@ -203,3 +203,8 @@ def test_kql_grouped_and_negated_where_fields():
         "Alias",
         "Other",
     }
+
+
+def test_kql_not_function_without_space_preserves_field_reference():
+    assert extract_fields_from_kql('T | where not(FileName == "whoami.exe")') == {"FileName"}
+    assert extract_fields_from_kql('T | where notFlag == true') == {"notFlag"}
