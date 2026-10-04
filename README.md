@@ -17,7 +17,7 @@ Run detdrift before shipping a mapping change to identify rules that need review
 Use an activated Python 3.12+ virtual environment with Git installed. No repository clone or development dependencies are needed. The demo writes sample files into a new directory.
 
 ```bash
-python -m pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.0"
+python -m pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.1"
 detdrift init detdrift-demo
 cd detdrift-demo
 
@@ -150,7 +150,7 @@ The workflow file is at [`.github/workflows/detdrift.yml`](.github/workflows/det
 Other repos can call the composite action at the repo root (`action.yml`):
 
 ```yaml
-- uses: chriswayneh/detdrift@v1.0.0
+- uses: chriswayneh/detdrift@v1.0.1
   with:
     before: samples/before.jsonl
     after: samples/after.jsonl
@@ -163,12 +163,12 @@ Other repos can call the composite action at the repo root (`action.yml`):
 
 Action input `dialect` is passed through to `detdrift diff --dialect` (`sigma` by default).
 
-Pin a release tag (for example `@v1.0.0`) instead of `@main`.
+Pin a release tag (for example `@v1.0.1`) instead of `@main`.
 
 Or install and run the CLI yourself:
 
 ```yaml
-- run: pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.0"
+- run: pip install "git+https://github.com/chriswayneh/detdrift.git@v1.0.1"
 - run: detdrift diff --before samples/before.jsonl --after samples/after.jsonl --rules detections/
 ```
 
