@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "detdrift"
-version = "1.0.0"
+version = "1.0.1"
 description = "Report which detection rules lose fields after a telemetry schema change (Sigma; optional KQL/SPL)."
 readme = "README.md"
 license = { text = "MIT" }

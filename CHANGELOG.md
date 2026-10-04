@@ -4,7 +4,12 @@ All notable changes to detdrift are summarized here in plain language.
 Versions follow [SemVer](https://semver.org/). The JSON report uses a separate
 integer `schema_version` (see [docs/json-report.md](docs/json-report.md)).
 
-## Unreleased
+## 1.0.1 - 2026-10-04
+
+Release candidate; tag and publication pending.
+
+- Extract KQL fields compared with symbol operators, including grouped and negated
+  where clauses and `not(...)` without a separating space, so a removed field is reported as IMPACTED instead of false SAFE.
 
 - Quick demo now uses the released install and `detdrift init`, without a clone or development dependencies.
 - Human reports describe missing field references without claiming a detection will stop firing. JSON schema and exit codes are unchanged.
