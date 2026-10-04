@@ -6,11 +6,6 @@ detdrift **1.0** is a small CLI you can run locally or in CI. Give it your rules
 
 Example: `CommandLine` gets renamed to `cmd`. A whoami rule that keys on `CommandLine` shows up as IMPACTED.
 
-**Release candidate:** v1.0.1 includes the KQL false-SAFE fixes. The install and
-Action pins below target this candidate and require its tag to be published.
-The latest published tag is currently v1.0.0. To validate the candidate before
-publication, install the locally built `dist/detdrift-1.0.1-py3-none-any.whl`.
-
 ## What it catches
 
 Pipelines rename fields. ECS mappings shift. A vendor agent update swaps `CommandLine` for `cmd`. Your Sigma pack can still deploy even when fields its rules reference are missing.

@@ -6,8 +6,6 @@ integer `schema_version` (see [docs/json-report.md](docs/json-report.md)).
 
 ## 1.0.1 - 2026-10-04
 
-Release candidate; tag and publication pending.
-
 - Extract KQL fields compared with symbol operators, including grouped and negated
   where clauses and `not(...)` without a separating space, so a removed field is reported as IMPACTED instead of false SAFE.
 
