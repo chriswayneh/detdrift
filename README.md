@@ -6,13 +6,19 @@ detdrift **1.0** is a small CLI you can run locally or in CI. Give it your rules
 
 Example: `CommandLine` gets renamed to `cmd`. A whoami rule that keys on `CommandLine` shows up as IMPACTED.
 
+## What this is
+
+Security teams write detection rules that look for specific log fields, such as `CommandLine`. When someone changes how logs are collected or mapped, a field can be renamed or dropped, and the rule quietly stops matching. detdrift compares a log sample from before the change with one from after, and lists the rules that still ask for a missing field.
+
+What it shows: CI-friendly checks for detection engineering and log pipeline changes, with stable exit codes and a JSON report.
+
 ## What it catches
 
 Pipelines rename fields. ECS mappings shift. A vendor agent update swaps `CommandLine` for `cmd`. Your Sigma pack can still deploy even when fields its rules reference are missing.
 
 Run detdrift before shipping a mapping change to identify rules that need review.
 
-## Quick demo
+## Quick start
 
 Use an activated Python 3.12+ virtual environment with Git installed. No repository clone or development dependencies are needed. The demo writes sample files into a new directory.
 
@@ -28,7 +34,27 @@ detdrift diff --before fixtures/before --after fixtures/before --rules rules
 detdrift diff --before fixtures/before --after fixtures/after --rules rules --json
 ```
 
-The second check intentionally exits with code **1**. It found the field rename; this is the expected demo result, not an installation error. Its JSON report includes:
+The second check intentionally exits with code **1**. It found the field rename; this is the expected demo result, not an installation error. Without `--json`, the same check prints:
+
+```text
+detdrift: schema change vs detection field refs
+================================================
+Rules scanned:    1
+Before fields:    3
+After fields:     3
+Removed fields:   CommandLine
+
+IMPACTED (1): rules referencing removed fields
+  x proc_whoami.yml
+      title:   Whoami Execution
+      level:   low
+      missing: CommandLine
+      refs:    CommandLine, Image
+
+Result: FAIL (detection coverage at risk)
+```
+
+Its JSON report includes:
 
 ```json
 {
