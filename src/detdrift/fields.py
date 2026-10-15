@@ -155,6 +155,19 @@ def extract_fields_from_detection(detection: Any) -> set[str]:
     fields: set[str] = set()
     if detection is None:
         return fields
+    if isinstance(detection, dict):
+        # Direct children of ``detection`` are selection identifiers (named in
+        # ``condition``), never field paths, even when they contain dots.
+        for key, value in detection.items():
+            if key in {"condition", "timeframe"}:
+                continue
+            if isinstance(value, dict) or (
+                isinstance(value, list) and any(isinstance(v, dict) for v in value)
+            ):
+                _walk_detection(value, fields)
+            else:
+                _walk_detection({key: value}, fields)
+        return fields
     _walk_detection(detection, fields)
     return fields
 

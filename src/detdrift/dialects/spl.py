@@ -154,14 +154,17 @@ def _is_field_name(name: str) -> bool:
 def _fields_from_list_body(body: str) -> set[str]:
     """Parse a comma-separated field list (table / fields)."""
     out: set[str] = set()
-    for raw in body.split(","):
+    # SPL accepts comma- and/or whitespace-separated lists (``table a b c``).
+    for raw in re.split(r"[,\s]+", body):
         part = raw.strip()
         if not part:
             continue
         # Drop leading +/- from ``fields +Foo, -Bar``
         if part[0] in "+-":
             part = part[1:].strip()
-        token = part.split()[0] if part.split() else part
+            if not part:
+                continue
+        token = part
         if _is_field_name(token):
             out.add(token)
     return out

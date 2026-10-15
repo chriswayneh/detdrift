@@ -208,3 +208,10 @@ def test_kql_grouped_and_negated_where_fields():
 def test_kql_not_function_without_space_preserves_field_reference():
     assert extract_fields_from_kql('T | where not(FileName == "whoami.exe")') == {"FileName"}
     assert extract_fields_from_kql('T | where notFlag == true') == {"notFlag"}
+
+
+def test_symbol_operator_without_whitespace():
+    from detdrift.dialects.kql import extract_fields_from_kql
+
+    fields = extract_fields_from_kql('T | where CommandLine=="x" and FileName!="y"')
+    assert {"CommandLine", "FileName"} <= fields
