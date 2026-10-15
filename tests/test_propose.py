@@ -172,3 +172,22 @@ def test_replace_keeps_modifiers():
     src = "    CommandLine|contains|all:\n      - whoami\n"
     out = _replace_field_keys_in_text(src, {"CommandLine": "cmd"})
     assert out == "    cmd|contains|all:\n      - whoami\n"
+
+
+def test_replace_keys_skips_block_scalar_values():
+    from detdrift.propose import _replace_field_keys_in_text
+
+    src = (
+        "description: |\n"
+        "  CommandLine: shown in docs\n"
+        "detection:\n"
+        "  selection:\n"
+        "    CommandLine|contains: x\n"
+        "    Note: >-\n"
+        "      CommandLine: literal\n"
+        "  condition: selection\n"
+    )
+    out = _replace_field_keys_in_text(src, {"CommandLine": "cmd"})
+    assert "  CommandLine: shown in docs\n" in out
+    assert "      CommandLine: literal\n" in out
+    assert "    cmd|contains: x\n" in out
