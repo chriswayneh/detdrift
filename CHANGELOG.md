@@ -4,6 +4,10 @@ All notable changes to detdrift are summarized here in plain language.
 Versions follow [SemVer](https://semver.org/). The JSON report uses a separate
 integer `schema_version` (see [docs/json-report.md](docs/json-report.md)).
 
+## Unreleased
+
+- **Security:** the reusable Action now passes its inputs to the shell through environment variables, so a crafted `before`, `after`, `rules`, `fail-on-*` or `dialect` value can no longer inject shell commands.
+
 ## 1.0.1 - 2026-10-04
 
 - Extract KQL fields compared with symbol operators, including grouped and negated
