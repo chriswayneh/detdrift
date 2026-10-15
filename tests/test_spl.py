@@ -154,3 +154,11 @@ def test_cli_fields_and_diff_spl():
     assert bad.exit_code == 1, bad.output
     assert "ProcessCommandLine" in bad.output
     assert "IMPACTED" in bad.output
+
+
+def test_table_whitespace_separated_fields():
+    from detdrift.dialects.spl import extract_fields_from_spl
+
+    fields = extract_fields_from_spl("index=a | table Image CommandLine User")
+    assert {"Image", "CommandLine", "User"} <= fields
+    assert {"Image", "User"} <= extract_fields_from_spl("index=a | table Image, User")
