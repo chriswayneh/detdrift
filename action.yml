@@ -64,21 +64,28 @@ runs:
     - name: Run detdrift diff
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        DETDRIFT_BEFORE: ${{ inputs.before }}
+        DETDRIFT_AFTER: ${{ inputs.after }}
+        DETDRIFT_RULES: ${{ inputs.rules }}
+        DETDRIFT_FAIL_ON_SEVERITY: ${{ inputs.fail-on-severity }}
+        DETDRIFT_FAIL_ON_TAG: ${{ inputs.fail-on-tag }}
+        DETDRIFT_DIALECT: ${{ inputs.dialect }}
       run: |
         set -euo pipefail
         args=(
           diff
-          --before "${{ inputs.before }}"
-          --after "${{ inputs.after }}"
-          --rules "${{ inputs.rules }}"
+          --before "$DETDRIFT_BEFORE"
+          --after "$DETDRIFT_AFTER"
+          --rules "$DETDRIFT_RULES"
         )
-        if [ -n "${{ inputs.fail-on-severity }}" ]; then
-          args+=(--fail-on-severity "${{ inputs.fail-on-severity }}")
+        if [ -n "$DETDRIFT_FAIL_ON_SEVERITY" ]; then
+          args+=(--fail-on-severity "$DETDRIFT_FAIL_ON_SEVERITY")
         fi
-        if [ -n "${{ inputs.fail-on-tag }}" ]; then
-          args+=(--fail-on-tag "${{ inputs.fail-on-tag }}")
+        if [ -n "$DETDRIFT_FAIL_ON_TAG" ]; then
+          args+=(--fail-on-tag "$DETDRIFT_FAIL_ON_TAG")
         fi
-        if [ -n "${{ inputs.dialect }}" ]; then
-          args+=(--dialect "${{ inputs.dialect }}")
+        if [ -n "$DETDRIFT_DIALECT" ]; then
+          args+=(--dialect "$DETDRIFT_DIALECT")
         fi
         detdrift "${args[@]}"
