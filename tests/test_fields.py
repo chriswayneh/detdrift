@@ -130,3 +130,14 @@ def test_keyword_only_no_fields():
     assert "mimikatz" not in fields
     assert "sekurlsa" not in fields
     assert "keywords" not in fields
+
+
+def test_top_level_selection_ids_are_not_field_prefixes():
+    from detdrift.fields import extract_fields_from_detection
+
+    det = {
+        "suspicious.CommandLine": {"Image|endswith": "x"},
+        "sel": [{"User": "a"}, {"ParentImage": "b"}],
+        "condition": "suspicious.CommandLine and sel",
+    }
+    assert extract_fields_from_detection(det) == {"Image", "User", "ParentImage"}
