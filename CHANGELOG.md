@@ -10,6 +10,7 @@ integer `schema_version` (see [docs/json-report.md](docs/json-report.md)).
 - **Exit code change:** `diff` now exits `2` (was `0`) for an unknown `--fail-on-severity` value, a before sample with no fields, a rules path with zero rules, or malformed rule YAML; `fields` exits `2` on malformed YAML. CI that relied on these passing silently will now fail.
 - Sigma: direct children of `detection` are treated as selection ids, not field paths. KQL/SPL: fields compared with no-space symbol operators and whitespace-separated table/field lists are now extracted, so removed fields are reported as IMPACTED instead of false SAFE.
 - `propose` no longer rewrites text inside YAML block scalars (`|` / `>`), such as descriptions.
+- SARIF artifact URIs are now relative to the working directory (repo root in CI) instead of to `--rules`, so code scanning links point at the right file.
 
 ## 1.0.1 - 2026-10-04
 
