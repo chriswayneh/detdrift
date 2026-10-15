@@ -66,3 +66,19 @@ def test_format_sarif_roundtrip_json():
     text = format_sarif(report)
     data = json.loads(text)
     assert data["runs"][0]["tool"]["driver"]["name"] == "detdrift"
+
+
+def test_sarif_uri_is_relative_to_cwd_not_rules_dir(tmp_path, monkeypatch):
+    from detdrift.diff import DiffReport, RuleImpact
+    from detdrift.sarif import report_to_sarif
+
+    monkeypatch.chdir(tmp_path)
+    impact = RuleImpact(
+        rule="win/a.yml", title="t", status="IMPACTED", referenced_fields=["X"],
+        missing_fields=["X"], never_in_before=[], level="high", tags=[],
+    )
+    report = DiffReport(before_fields=["X"], after_fields=[], removed_fields=["X"],
+                        impacts=[impact], rules_scanned=1, rules_root="detections")
+    uri = report_to_sarif(report)["runs"][0]["results"][0]["locations"][0][
+        "physicalLocation"]["artifactLocation"]["uri"]
+    assert uri == "detections/win/a.yml"

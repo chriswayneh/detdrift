@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 from typing import Any
 
 from detdrift import __version__
@@ -10,6 +12,16 @@ from detdrift.diff import DiffReport, RuleImpact
 
 SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
 RULE_ID = "detdrift-field-missing"
+
+
+def _artifact_uri(report: DiffReport, item: RuleImpact) -> str:
+    """URI relative to the working directory (repo root in CI), not --rules."""
+    path = Path(report.rules_root) / item.rule if report.rules_root else Path(item.rule)
+    try:
+        rel = os.path.relpath(path, Path.cwd())
+    except ValueError:  # different drive on Windows
+        rel = str(path)
+    return rel.replace("\\", "/")
 
 
 def _level_for_impact(item: RuleImpact) -> str:
@@ -48,7 +60,7 @@ def report_to_sarif(report: DiffReport) -> dict[str, Any]:
                     {
                         "physicalLocation": {
                             "artifactLocation": {
-                                "uri": item.rule.replace("\\", "/"),
+                                "uri": _artifact_uri(report, item),
                             }
                         }
                     }

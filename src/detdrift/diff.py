@@ -76,6 +76,7 @@ class DiffReport:
     warnings: list[str] = field(default_factory=list)
     before_event_count: int = 0
     after_event_count: int = 0
+    rules_root: str = ""
 
     @property
     def impacted(self) -> list[RuleImpact]:
@@ -321,6 +322,7 @@ def diff_rules(
         removed_fields=removed,
         impacts=impacts,
         rules_scanned=len(rule_files),
+        rules_root=str(rules_root),
         schema_version=REPORT_SCHEMA_VERSION,
         warnings=warnings,
         before_event_count=before_sample.event_count,
