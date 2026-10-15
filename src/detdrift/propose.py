@@ -233,9 +233,25 @@ def _replace_field_keys_in_text(text: str, renames: dict[str, str]) -> str:
         r"^([ \t]*)("
         + "|".join(re.escape(k) for k in ordered)
         + r")((?:\|[A-Za-z0-9_]+)*)(:)",
-        re.MULTILINE,
     )
-    return pattern.sub(replacer, text)
+    # Lines inside YAML block scalars (``key: |`` / ``key: >-``) are values,
+    # not keys; never rewrite them.
+    block_start = re.compile(r":[ \t]*[|>][+-]?[0-9]?[+-]?[ \t]*(?:#.*)?$")
+    out: list[str] = []
+    block_indent: int | None = None
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        indent = len(body) - len(body.lstrip(" \t"))
+        if block_indent is not None:
+            if not body.strip() or indent > block_indent:
+                out.append(line)
+                continue
+            block_indent = None
+        new_line = pattern.sub(replacer, line, count=1)
+        if block_start.search(body):
+            block_indent = indent
+        out.append(new_line)
+    return "".join(out)
 
 
 def format_patch(result: ProposeResult, rules_dir: Path | str) -> str:
