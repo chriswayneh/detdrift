@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 
 from detdrift import __version__
 from detdrift.dialects import extract_fields_from_file, normalize_dialect
-from detdrift.diff import diff_rules, format_report_human
+from detdrift.diff import _SEVERITY_RANK, diff_rules, format_report_human
 from detdrift.propose import format_propose, propose_from_paths
 from detdrift.sarif import format_sarif
 
@@ -124,6 +125,9 @@ def diff_cmd(
         raise typer.Exit(2) from exc
     try:
         report = diff_rules(before, after, rules, ignore=ignore, dialect=dialect_norm)
+    except yaml.YAMLError as exc:
+        typer.secho(f"Malformed YAML: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
@@ -136,6 +140,18 @@ def diff_cmd(
         typer.secho(f"warning: {msg}", fg=typer.colors.YELLOW, err=True)
 
     sev_filters = _split_csv(fail_on_severity)
+    unknown_sev = [s for s in sev_filters if s.strip().lower() not in _SEVERITY_RANK]
+    if unknown_sev:
+        typer.secho(
+            f"Unknown --fail-on-severity {', '.join(unknown_sev)}; "
+            f"use {', '.join(_SEVERITY_RANK)}",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(2)
+    if report.rules_scanned == 0:
+        typer.secho(f"No rules found under {rules}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
     tag_filters = _split_csv(fail_on_tag)
     filters_active = bool(sev_filters or tag_filters)
     fail_matches = report.matching_impacts(
@@ -206,7 +222,7 @@ def fields_cmd(
         raise typer.Exit(2) from exc
     try:
         fields = extract_fields_from_file(rule, dialect=dialect_norm)
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, yaml.YAMLError) as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
 
