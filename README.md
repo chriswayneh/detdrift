@@ -165,7 +165,7 @@ Exit codes:
 |------|---------|
 | 0 | No failing IMPACTED rules (none at all, or none matching `--fail-on-*`) |
 | 1 | At least one rule references a removed field and, if filters are set, matches the fail-on filters |
-| 2 | Bad paths or parse errors |
+| 2 | Bad input: bad paths, malformed YAML or other parse errors, an unknown `--fail-on-severity` value, an empty before sample, or no rules found |
 
 ## CI
 

@@ -7,6 +7,7 @@ integer `schema_version` (see [docs/json-report.md](docs/json-report.md)).
 ## Unreleased
 
 - **Security:** the reusable Action now passes its inputs to the shell through environment variables, so a crafted `before`, `after`, `rules`, `fail-on-*` or `dialect` value can no longer inject shell commands.
+- **Exit code change:** `diff` now exits `2` (was `0`) for an unknown `--fail-on-severity` value, a before sample with no fields, a rules path with zero rules, or malformed rule YAML; `fields` exits `2` on malformed YAML. CI that relied on these passing silently will now fail.
 
 ## 1.0.1 - 2026-10-04
 
