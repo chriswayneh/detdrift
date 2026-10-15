@@ -300,6 +300,11 @@ def diff_rules(
     after_sample = load_schema_sample(after_path)
     before = before_sample.fields
     after = after_sample.fields
+    if not before:
+        raise ValueError(
+            f"Before schema sample {before_path} has no fields; "
+            "cannot tell which fields were removed"
+        )
     removed = sorted(before - after)
     warnings = sample_warnings(before_sample, after_sample)
 
