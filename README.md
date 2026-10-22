@@ -1,22 +1,18 @@
 # detdrift
 
+[![CI](https://github.com/chriswayneh/detdrift/actions/workflows/detdrift.yml/badge.svg?branch=main)](https://github.com/chriswayneh/detdrift/actions/workflows/detdrift.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](pyproject.toml)
+
 Check which detection rules reference fields missing after a telemetry change.
 
 detdrift **1.0** is a small CLI you can run locally or in CI. Give it your rules (Sigma by default; optional KQL/SPL) plus a before and after NDJSON sample. It tells you which rules still need fields that disappeared after the change. It does not run detections, and it is not a SIEM. The JSON report (`schema_version` 1) and exit codes are the stable 1.0 contract.
 
 Example: `CommandLine` gets renamed to `cmd`. A whoami rule that keys on `CommandLine` shows up as IMPACTED.
 
-## What this is
-
 Security teams write detection rules that look for specific log fields, such as `CommandLine`. When someone changes how logs are collected or mapped, a field can be renamed or dropped, and the rule quietly stops matching. detdrift compares a log sample from before the change with one from after, and lists the rules that still ask for a missing field.
 
 What it shows: CI-friendly checks for detection engineering and log pipeline changes, with stable exit codes and a JSON report.
-
-## What it catches
-
-Pipelines rename fields. ECS mappings shift. A vendor agent update swaps `CommandLine` for `cmd`. Your Sigma pack can still deploy even when fields its rules reference are missing.
-
-Run detdrift before shipping a mapping change to identify rules that need review.
 
 ## Quick start
 
@@ -70,8 +66,16 @@ This is an excerpt; the full report also lists each rule and its missing fields.
 
 Install from the versioned GitHub URL above. This project has not been published to PyPI. For an editable install and tests, see [Contributing](CONTRIBUTING.md).
 
-## Commands
+## Features
 
+### What it catches
+Pipelines rename fields. ECS mappings shift. A vendor agent update swaps `CommandLine` for `cmd`. Your Sigma pack can still deploy even when fields its rules reference are missing.
+
+Run detdrift before shipping a mapping change to identify rules that need review.
+
+## Usage
+
+### Commands
 | Command | What it does |
 |--------|----------------|
 | `detdrift diff -b BEFORE -a AFTER -r RULES` | Main check. Exit 1 if any rule is impacted (or if a fail-on filter matches). |
@@ -92,7 +96,7 @@ Useful `diff` flags:
 
 `BEFORE` and `AFTER` can be one NDJSON/JSONL file, a flat JSON field map (`{"Image": true, ...}` or `{"fields": [...]}`), a JSON array of events, or a directory of those. See [importers](docs/importers.md). Rules under `--rules` are found recursively (`*.yml` / `*.yaml` for Sigma; add `*.kql` / `*.spl` with `--dialect kql|spl|auto`).
 
-### Fail-on example
+#### Fail-on example
 
 The demo whoami rule is `level: low`. With a rename that impacts it:
 
@@ -106,9 +110,7 @@ detdrift diff -b fixtures/before -a fixtures/after -r rules --fail-on-tag attack
 
 When both filters are set, a rule must match severity and tag.
 
-
-## Propose a fix
-
+### Propose a fix
 When `diff` reports IMPACTED rules, draft mapping notes or a patch for human review:
 
 ```bash
@@ -123,9 +125,7 @@ Heuristics suggest a rename only when the mapping is obvious (known aliases or a
 
 Agent skill: [`skills/detdrift/SKILL.md`](skills/detdrift/SKILL.md).
 
-
-## Other dialects
-
+### Other dialects
 Sigma is the default. Optional **KQL** and **SPL** extractors collect simple field references - not query engines and not matchers. Part of the 1.0 dialect surface.
 
 ```bash
@@ -152,26 +152,10 @@ detdrift diff \
 
 Limits: KQL ignores joins, `let`, and expression trees; SPL ignores subsearches, macros, and `eval` trees. Neither dialect executes queries.
 
-## How it works
-
-1. Build a field set from the before samples (top-level keys, plus one level of nested keys).
-2. Do the same for the after samples.
-3. Walk each Sigma `detection` block, collect selection field names (including lists of maps and common nested paths), and drop modifiers after `|` (so `CommandLine|contains` becomes `CommandLine`).
-4. If a rule references a field that exists before and is missing after, mark it IMPACTED.
-
-Exit codes:
-
-| Code | Meaning |
-|------|---------|
-| 0 | No failing IMPACTED rules (none at all, or none matching `--fail-on-*`) |
-| 1 | At least one rule references a removed field and, if filters are set, matches the fail-on filters |
-| 2 | Bad input: bad paths, malformed YAML or other parse errors, an unknown `--fail-on-severity` value, an empty before sample, or no rules found |
-
-## CI
-
+### CI
 The workflow file is at [`.github/workflows/detdrift.yml`](.github/workflows/detdrift.yml). It runs the tests, checks demo exit codes, and verifies a built-wheel installation outside the source checkout on Linux and Windows.
 
-### Reusable Action
+#### Reusable Action
 
 Other repos can call the composite action at the repo root (`action.yml`):
 
@@ -198,8 +182,7 @@ Or install and run the CLI yourself:
 - run: detdrift diff --before samples/before.jsonl --after samples/after.jsonl --rules detections/
 ```
 
-## What this is and is not
-
+### What this is and is not
 **Is:** a check for detection field references (Sigma default; optional KQL/SPL) against a schema change. A CI gate for mapping edits. Small helpers (`fields`, `propose-patch`) for seeing what a rule touches and drafting mapping notes.
 
 **Is not:** a Sigma/KQL/SPL matcher, correlator, or SIEM. It does not evaluate Sigma `condition` blocks or execute KQL/SPL. A rule that is not IMPACTED still might not fire for other reasons. Fields absent from both samples are not counted as removed.
@@ -211,8 +194,7 @@ Current limits:
 - Modifiers are stripped; values are not validated
 - Multi-document YAML and correlations are out of scope
 
-## Docs
-
+### Docs
 - [Architecture](ARCHITECTURE.md)
 - [Roadmap](ROADMAP.md) (phases 0 to 4; 1.0 shipped)
 - [Changelog](CHANGELOG.md)
@@ -221,6 +203,82 @@ Current limits:
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)
 
+## Architecture
+
+`cli.py` loads before and after event samples into field sets (`schema.py`), pulls the fields each Sigma rule references (`fields.py` and `dialects/`), and `diff.py` marks rules whose fields disappeared. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design.
+
+```mermaid
+flowchart LR
+  subgraph inputs [Inputs]
+    B[Before NDJSON or schema]
+    A[After NDJSON or schema]
+    R[Sigma rules dir]
+  end
+  subgraph core [detdrift core]
+    S[schema.py field set union]
+    F[fields.py and dialects field refs]
+    D[diff.py impact report]
+    P[propose.py notes or patch]
+  end
+  subgraph outputs [Outputs]
+    H[Human report]
+    J[JSON or SARIF report]
+    N[Mapping notes or draft patch]
+    E[Exit code 0, 1 or 2]
+  end
+  B --> S
+  A --> S
+  R --> F
+  S --> D
+  F --> D
+  D --> H
+  D --> J
+  D --> E
+  D --> P
+  P --> N
+```
+
+### How it works
+1. Build a field set from the before samples (top-level keys, plus one level of nested keys).
+2. Do the same for the after samples.
+3. Walk each Sigma `detection` block, collect selection field names (including lists of maps and common nested paths), and drop modifiers after `|` (so `CommandLine|contains` becomes `CommandLine`).
+4. If a rule references a field that exists before and is missing after, mark it IMPACTED.
+
+Exit codes:
+
+| Code | Meaning |
+|------|---------|
+| 0 | No failing IMPACTED rules (none at all, or none matching `--fail-on-*`) |
+| 1 | At least one rule references a removed field and, if filters are set, matches the fail-on filters |
+| 2 | Bad input: bad paths, malformed YAML or other parse errors, an unknown `--fail-on-severity` value, an empty before sample, or no rules found |
+
+## Built with
+
+**Languages** (GitHub language stats, checked 2026-10-21): Python 100%
+
+**AI tools:**
+
+- Grok Bot (confirmed by Chris, 2026-10-21)
+- Cursor cloud agents (confirmed by Chris, 2026-10-21)
+
+Commits made with AI help carry a `Co-authored-by` trailer from now on. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for planned phases and [CHANGELOG.md](CHANGELOG.md) for released versions.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for supported versions and how to report a vulnerability privately.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), including how to credit AI tools in commits.
+
 ## License
 
 MIT (c) 2026 Christopher Hickman
+
+## Acknowledgments
+
+README layout adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template) by Othneil Drew.
