@@ -14,6 +14,12 @@ Security teams write detection rules that look for specific log fields, such as 
 
 What it shows: CI-friendly checks for detection engineering and log pipeline changes, with stable exit codes and a JSON report.
 
+## Demo
+
+<p align="center"><img src="docs/assets/demo.gif" alt="detdrift v1.1.0 demo: init fictional fixtures, PASS when schemas match, FAIL when CommandLine is renamed to cmd" width="100%"></p>
+
+The GIF replays real v1.1.0 output using the fictional starter fixtures. [Run the demo](docs/demo.md).
+
 ## Quick start
 
 Use an activated Python 3.12+ virtual environment with Git installed. No repository clone or development dependencies are needed. The demo writes sample files into a new directory.

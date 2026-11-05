@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Docs: README terminal demo GIF (`docs/assets/demo.gif`) recorded from the v1.1.0 package against the fictional `detdrift init` fixtures, with `docs/demo.md` and `scripts/record-demo.sh` for reproduction.
+
 All notable changes to detdrift are summarized here in plain language.
 Versions follow [SemVer](https://semver.org/). The JSON report uses a separate
 integer `schema_version` (see [docs/json-report.md](docs/json-report.md)).
